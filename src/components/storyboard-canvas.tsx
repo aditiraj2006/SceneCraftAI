@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { Scene } from '@/lib/types';
 import { SceneCard, SceneCardSkeleton } from '@/components/scene-card';
 import { Film } from 'lucide-react';
