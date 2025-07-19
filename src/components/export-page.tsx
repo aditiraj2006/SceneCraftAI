@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Scene, Story } from '@/lib/types';
 import { ArrowLeft, Edit, Download, Plus, Trash2, GitBranch, Share2, Copy, Image as ImageIcon, Speaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,13 @@ type ExportPageProps = {
 
 export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageProps) {
     const { toast } = useToast();
+    const [shareUrl, setShareUrl] = useState('');
+
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        setShareUrl(window.location.href);
+      }
+    }, []);
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onStoryUpdate({...story, title: e.target.value});
@@ -33,6 +41,7 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
     }
 
     const handleCopyToClipboard = (text: string) => {
+        if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
             toast({
                 title: "Link Copied!",
@@ -192,8 +201,8 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                      <div className="space-y-4 p-4 border rounded-lg">
                         <h4 className="font-medium">Share</h4>
                          <div className="flex gap-2">
-                            <Input value="https://scenecraft.ai/share/..." readOnly />
-                            <Button variant="secondary" size="icon" onClick={() => handleCopyToClipboard('https://scenecraft.ai/share/...')}>
+                            <Input value={shareUrl} readOnly placeholder="Generating share link..."/>
+                            <Button variant="secondary" size="icon" onClick={() => handleCopyToClipboard(shareUrl)}>
                                 <Copy className="h-4 w-4" />
                             </Button>
                         </div>
