@@ -30,6 +30,25 @@ export async function generateTrailer(input: GenerateTrailerInput): Promise<Gene
   return generateTrailerFlow(input);
 }
 
+// Helper function to fetch and convert an image to a data URI
+async function imageUrlToDataUri(url: string): Promise<string> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.warn(`Failed to fetch image ${url}. Status: ${response.status}`);
+            return url; // return original if fetch fails
+        }
+        const contentType = response.headers.get('content-type') || 'image/png';
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        return `data:${contentType};base64,${base64}`;
+    } catch (error) {
+        console.warn(`Error fetching image ${url}:`, error);
+        return url; // return original on error
+    }
+}
+
+
 const generateTrailerFlow = ai.defineFlow(
   {
     name: 'generateTrailerFlow',
@@ -37,12 +56,15 @@ const generateTrailerFlow = ai.defineFlow(
     outputSchema: GenerateTrailerOutputSchema,
   },
   async ({ scenes, config }) => {
-    // This is a long-running operation. In a real app, this would
-    // likely be handled by a background job queue.
-    // The flow would return an operation ID, and the client would poll for status.
+    
+    const imageScenes = scenes.filter(s => s.imageUrl);
 
+    if (imageScenes.length === 0) {
+        throw new Error("Cannot generate a trailer without at least one scene with a visual.");
+    }
+    
     const promptText = `
-      Create a cinematic trailer video with a duration of ${config.length}.
+      Create a cinematic trailer video with a duration of ${config.length} seconds.
       The overall tone should be ${config.tone}.
       Use the following scenes in sequence. 
       Generate appropriate transitions between scenes to match the tone.
@@ -50,14 +72,15 @@ const generateTrailerFlow = ai.defineFlow(
       ${config.includeTextOverlays ? 'Include text overlays for scene titles or key narration moments.' : ''}
 
       Scenes:
-      ${scenes.map((s, i) => `Scene ${i+1}: ${s.description}`).join('\n')}
+      ${imageScenes.map((s, i) => `Scene ${i+1}: ${s.description}`).join('\n')}
     `;
 
-    const promptMedia = scenes.filter(s => s.imageUrl).map(s => ({
-        media: { url: s.imageUrl }
-    }));
-
-
+    const promptMedia = await Promise.all(
+        imageScenes.map(async (s) => ({
+            media: { url: await imageUrlToDataUri(s.imageUrl) }
+        }))
+    );
+    
     let { operation } = await ai.generate({
       model: googleAI.model('veo-2.0-generate-001'),
       prompt: [
@@ -74,11 +97,9 @@ const generateTrailerFlow = ai.defineFlow(
       throw new Error('Expected the model to return an operation');
     }
 
-    // In a real implementation, you would not block here.
-    // You would return the operation and poll for its status from the client.
+    // This is a simplified polling mechanism for demonstration.
     while (!operation.done) {
       console.log('Checking operation status...');
-      // This is a simplified polling mechanism for demonstration.
       await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
       operation = await ai.checkOperation(operation);
     }
@@ -94,13 +115,10 @@ const generateTrailerFlow = ai.defineFlow(
       throw new Error('Failed to find the generated video in the operation result.');
     }
     
-    // In a real app, you would likely not return the video as a data URI due to size.
-    // Instead, you'd save it to cloud storage and return the public URL.
-    // For this example, we'll assume the URL is directly usable or can be converted.
-    
-    // This is a placeholder. You would need to handle the video download/conversion.
-    const fetchedVideoDataUri = videoPart.media.url;
+    const fetchedVideoDataUri = await imageUrlToDataUri(videoPart.media.url);
 
     return { videoUrl: fetchedVideoDataUri };
   }
 );
+
+    

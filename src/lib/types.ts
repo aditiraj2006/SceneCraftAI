@@ -106,10 +106,12 @@ export const characters: Character[] = [
 
 
 export type TrailerConfig = {
-  length: '15s' | '30s' | '60s';
-  tone: 'Exciting' | 'Mysterious' | 'Dramatic' | 'Hopeful';
+  length: string;
+  tone: 'Exciting' | 'Mysterious' | 'Dramatic' | 'Hopeful' | 'Cinematic';
   voiceover: 'Full' | 'Highlights';
   includeMusic: boolean;
   musicGenre: 'Epic' | 'Suspenseful' | 'Upbeat' | 'None';
   includeTextOverlays: boolean;
 };
+
+    

@@ -14,6 +14,7 @@ import { generateTrailer } from '@/ai/flows/generate-trailer';
 import { Separator } from './ui/separator';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 type TrailerPageProps = {
   story: Story;
@@ -22,26 +23,7 @@ type TrailerPageProps = {
 };
 
 // Placeholder data for generated trailers
-const placeholderTrailers: Trailer[] = [
-    // {
-    //     id: 'trailer-1',
-    //     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    //     thumbnailUrl: 'https://placehold.co/1280x720.png',
-    //     title: 'Trailer V1 - Exciting',
-    //     duration: '0:32',
-    //     generatedAt: '2023-10-27T10:00:00Z',
-    //     config: { length: '30s', tone: 'Exciting', voiceover: 'Full', includeMusic: true, musicGenre: 'Epic', includeTextOverlays: true }
-    // },
-    // {
-    //     id: 'trailer-2',
-    //     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    //     thumbnailUrl: 'https://placehold.co/1280x720.png',
-    //     title: 'Trailer V2 - Mysterious',
-    //     duration: '0:58',
-    //     generatedAt: '2023-10-27T11:30:00Z',
-    //     config: { length: '60s', tone: 'Mysterious', voiceover: 'Highlights', includeMusic: true, musicGenre: 'Suspenseful', includeTextOverlays: false }
-    // }
-];
+const placeholderTrailers: Trailer[] = [];
 
 
 export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
@@ -49,9 +31,10 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
   const [isGenerating, startGenerationTransition] = useTransition();
   const [trailers, setTrailers] = useState<Trailer[]>(placeholderTrailers);
   const [activeTrailer, setActiveTrailer] = useState<Trailer | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [trailerConfig, setTrailerConfig] = useState<TrailerConfig>({
-    length: '15s',
+    length: '15',
     tone: 'Exciting',
     voiceover: 'Full',
     includeMusic: true,
@@ -64,45 +47,69 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
   };
 
   const handleGenerateTrailer = () => {
+    setApiError(null);
     startGenerationTransition(async () => {
       try {
+        if (scenes.filter(s => s.imageUrl).length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Images to Generate Trailer',
+                description: 'Please generate visuals for your scenes first.',
+            });
+            return;
+        }
+
         toast({
           title: "Trailer Generation Started",
           description: "This process can take several minutes. We'll notify you when it's ready.",
         });
 
-        // In a real app, this would return an operation ID to poll
         const result = await generateTrailer({ scenes, config: trailerConfig });
         
         const newTrailer: Trailer = {
             id: crypto.randomUUID(),
             url: result.videoUrl,
-            thumbnailUrl: 'https://placehold.co/1280x720.png', // Placeholder thumbnail
+            thumbnailUrl: scenes.find(s => s.imageUrl)?.imageUrl || 'https://placehold.co/1280x720.png',
             title: `Trailer V${trailers.length + 1} - ${trailerConfig.tone}`,
-            duration: trailerConfig.length,
+            duration: trailerConfig.length + 's',
             generatedAt: new Date().toISOString(),
             config: trailerConfig,
         };
         
-        setTrailers(prev => [...prev, newTrailer]);
+        setTrailers(prev => [newTrailer, ...prev]);
+        setActiveTrailer(newTrailer);
 
         toast({
           title: "Trailer Generation Complete!",
-          description: "Your new trailer is now available below.",
+          description: "Your new trailer is now available for preview.",
         });
 
       } catch (error: any) {
         console.error("Trailer generation failed", error);
+        
+        let friendlyMessage = "An unexpected error occurred. Please check the console and try again.";
+        if (error.message && error.message.includes('billing')) {
+            friendlyMessage = "This feature requires a Google Cloud Platform account with billing enabled. Please check your account settings.";
+            setApiError(friendlyMessage);
+        } else if (error.message) {
+            friendlyMessage = error.message;
+        }
+
         toast({
           variant: 'destructive',
           title: "Trailer Generation Failed",
-          description: error.message || "An unexpected error occurred. Please check the console and try again.",
+          description: friendlyMessage,
+          duration: 9000,
         });
       }
     });
   };
 
   const downloadTrailer = (url: string, title: string) => {
+    if (!url.startsWith('data:')) {
+      toast({ variant: 'destructive', title: 'Download Failed', description: 'Video URL is not valid for download.' });
+      return;
+    }
     const link = document.createElement('a');
     link.href = url;
     link.download = `${title.replace(/\s+/g, '_')}.mp4`;
@@ -132,13 +139,13 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Trailer Length</Label>
+                        <Label>Trailer Length (in seconds)</Label>
                         <Select value={trailerConfig.length} onValueChange={v => handleConfigChange('length', v)}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="15s">15 Seconds</SelectItem>
-                                <SelectItem value="30s">30 Seconds</SelectItem>
-                                <SelectItem value="60s">60 Seconds</SelectItem>
+                                <SelectItem value="5">5 Seconds</SelectItem>
+                                <SelectItem value="8">8 Seconds</SelectItem>
+                                <SelectItem value="15">15 Seconds</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -151,6 +158,7 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                                 <SelectItem value="Mysterious">Mysterious</SelectItem>
                                 <SelectItem value="Dramatic">Dramatic</SelectItem>
                                 <SelectItem value="Hopeful">Hopeful</SelectItem>
+                                <SelectItem value="Cinematic">Cinematic</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -192,6 +200,13 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                         <Label htmlFor="include-overlays">Include Text Overlays</Label>
                     </div>
                     
+                    {apiError && (
+                        <Alert variant="destructive">
+                            <AlertTitle>Action Required</AlertTitle>
+                            <AlertDescription>{apiError}</AlertDescription>
+                        </Alert>
+                    )}
+
                     <Button size="lg" className="w-full" onClick={handleGenerateTrailer} disabled={isGenerating}>
                         {isGenerating ? (
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -241,7 +256,7 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                                             <Card key={trailer.id} className="group overflow-hidden">
                                                 <CardContent className="p-0">
                                                     <div className="relative aspect-video bg-muted">
-                                                        <Image src={trailer.thumbnailUrl} alt={trailer.title} layout="fill" objectFit="cover" />
+                                                        <Image src={trailer.thumbnailUrl} alt={trailer.title} layout="fill" objectFit="cover" data-ai-hint="trailer thumbnail" />
                                                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Button size="icon" variant="ghost" className="text-white hover:bg-white/20" onClick={() => setActiveTrailer(trailer)}>
                                                                 <Play className="h-8 w-8" />
@@ -285,3 +300,5 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
     </div>
   );
 }
+
+    
