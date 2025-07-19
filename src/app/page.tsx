@@ -25,7 +25,7 @@ export default function MultistepStoryboarder() {
       id: crypto.randomUUID(),
       title: ks.title,
       description: ks.description,
-      narrationText: `Scene ${index + 1}: Start writing your narration here.`,
+      narrationText: ks.narration,
       imageUrl: '', 
       aiPromptUsed: '',
     }));
@@ -49,7 +49,7 @@ export default function MultistepStoryboarder() {
              id: crypto.randomUUID(),
              title: ks.title,
              description: ks.description,
-             narrationText: `Scene ${index + 1}: Start writing your narration here.`,
+             narrationText: ks.narration,
              imageUrl: '',
              aiPromptUsed: '',
         }

@@ -14,6 +14,7 @@ export interface Scene {
 export interface KeyScene {
     title: string;
     description: string;
+    narration: string;
 }
 
 export interface Story {

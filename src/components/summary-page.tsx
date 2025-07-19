@@ -23,14 +23,17 @@ export function SummaryPage({ story, onProceed, onBack }: SummaryPageProps) {
     setCurrentStory(prev => ({ ...prev, summary: newSummary }));
   };
 
-  const updateKeyScene = (index: number, field: keyof KeyScene, value: string) => {
+  const updateKeyScene = (index: number, field: keyof Omit<KeyScene, 'narration'>, value: string) => {
     const newKeyScenes = [...currentStory.keyScenes];
-    newKeyScenes[index] = { ...newKeyScenes[index], [field]: value };
+    const sceneToUpdate = { ...newKeyScenes[index] };
+    if (field === 'title') sceneToUpdate.title = value;
+    if (field === 'description') sceneToUpdate.description = value;
+    newKeyScenes[index] = sceneToUpdate;
     setCurrentStory(prev => ({ ...prev, keyScenes: newKeyScenes }));
   };
 
   const addKeyScene = () => {
-    const newKeyScenes = [...currentStory.keyScenes, { title: 'New Scene', description: 'A brief description.' }];
+    const newKeyScenes = [...currentStory.keyScenes, { title: 'New Scene', description: 'A brief description.', narration: 'A new narration.' }];
     setCurrentStory(prev => ({ ...prev, keyScenes: newKeyScenes }));
   };
 
