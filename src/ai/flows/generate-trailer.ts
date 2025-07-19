@@ -81,17 +81,29 @@ const generateTrailerFlow = ai.defineFlow(
         }))
     );
     
-    let { operation } = await ai.generate({
-      model: googleAI.model('veo-2.0-generate-001'),
-      prompt: [
-        { text: promptText },
-        ...promptMedia,
-      ],
-      config: {
-        durationSeconds: parseInt(config.length, 10),
-        aspectRatio: '16:9',
-      },
-    });
+    let operation;
+    try {
+        const genAIGeneration = await ai.generate({
+          model: googleAI.model('veo-2.0-generate-001'),
+          prompt: [
+            { text: promptText },
+            ...promptMedia,
+          ],
+          config: {
+            durationSeconds: parseInt(config.length, 10),
+            aspectRatio: '16:9',
+          },
+        });
+        operation = genAIGeneration.operation;
+
+    } catch (e: any) {
+        // Intercept billing-related errors early
+        if (e.message && e.message.includes('billing')) {
+            throw new Error("This feature requires a Google Cloud Platform account with billing enabled. Please check your account settings to use the Veo model.");
+        }
+        throw e; // re-throw other errors
+    }
+
 
     if (!operation) {
       throw new Error('Expected the model to return an operation');
@@ -115,10 +127,9 @@ const generateTrailerFlow = ai.defineFlow(
       throw new Error('Failed to find the generated video in the operation result.');
     }
     
+    // The media URL from Veo might expire, so we convert it to a data URI to make it persistent.
     const fetchedVideoDataUri = await imageUrlToDataUri(videoPart.media.url);
 
     return { videoUrl: fetchedVideoDataUri };
   }
 );
-
-    

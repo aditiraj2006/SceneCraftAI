@@ -34,7 +34,7 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [trailerConfig, setTrailerConfig] = useState<TrailerConfig>({
-    length: '15',
+    length: '5',
     tone: 'Exciting',
     voiceover: 'Full',
     includeMusic: true,
@@ -89,7 +89,7 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
         
         let friendlyMessage = "An unexpected error occurred. Please check the console and try again.";
         if (error.message && error.message.includes('billing')) {
-            friendlyMessage = "This feature requires a Google Cloud Platform account with billing enabled. Please check your account settings.";
+            friendlyMessage = "This feature requires a Google Cloud Platform account with billing enabled. Please check your account settings to use the Veo model.";
             setApiError(friendlyMessage);
         } else if (error.message) {
             friendlyMessage = error.message;
@@ -145,7 +145,6 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                             <SelectContent>
                                 <SelectItem value="5">5 Seconds</SelectItem>
                                 <SelectItem value="8">8 Seconds</SelectItem>
-                                <SelectItem value="15">15 Seconds</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -201,13 +200,13 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
                     </div>
                     
                     {apiError && (
-                        <Alert variant="destructive">
+                        <Alert variant="destructive" className="mt-4">
                             <AlertTitle>Action Required</AlertTitle>
                             <AlertDescription>{apiError}</AlertDescription>
                         </Alert>
                     )}
 
-                    <Button size="lg" className="w-full" onClick={handleGenerateTrailer} disabled={isGenerating}>
+                    <Button size="lg" className="w-full mt-4" onClick={handleGenerateTrailer} disabled={isGenerating}>
                         {isGenerating ? (
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         ) : (
@@ -300,5 +299,3 @@ export function TrailerPage({ story, scenes, onBack }: TrailerPageProps) {
     </div>
   );
 }
-
-    
