@@ -22,12 +22,17 @@ export interface Story {
 }
 
 export const voiceOptions = z.enum([
-    'Echo',
-    'Fable',
-    'Onyx',
-    'Nova',
-    'Shimmer',
-    'alloy',
-    'rocky',
+    'Algenib',
+    'Antares',
+    'Arcturus',
+    'Canopus',
+    'Capella',
+    'Deneb',
+    'Pollux',
+    'Regulus',
+    'Rigel',
+    'Sirius',
+    'Spica',
+    'Vega',
 ]);
 export type VoiceOption = z.infer<typeof voiceOptions>;

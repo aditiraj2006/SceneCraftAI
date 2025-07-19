@@ -38,7 +38,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
   const [isGeneratingVisual, startVisualGenerationTransition] = useTransition();
   const [isGeneratingVoiceover, startVoiceoverGenerationTransition] = useTransition();
   const [isEnhancing, startEnhancingTransition] = useTransition();
-  const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Nova');
+  const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Algenib');
 
   const { toast } = useToast();
 

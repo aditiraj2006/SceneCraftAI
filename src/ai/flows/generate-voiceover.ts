@@ -13,8 +13,7 @@ import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import wav from 'wav';
-import { voiceOptions } from '@/lib/types';
-import type { VoiceOption } from '@/lib/types';
+import { voiceOptions, type VoiceOption } from '@/lib/types';
 
 
 const GenerateVoiceoverInputSchema = z.object({
@@ -51,7 +50,7 @@ async function toWav(
       bitDepth: sampleWidth * 8,
     });
 
-    let bufs = [] as any[];
+    const bufs: Buffer[] = [];
     writer.on('error', reject);
     writer.on('data', function (d) {
       bufs.push(d);
@@ -79,14 +78,14 @@ const generateVoiceoverFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voice as any }, // Cast needed as Genkit types might not be fully updated
+            prebuiltVoiceConfig: { voiceName: voice },
           },
         },
       },
       prompt: text,
     });
 
-    if (!media) {
+    if (!media?.url) {
       throw new Error('No media was returned from the TTS model.');
     }
 
