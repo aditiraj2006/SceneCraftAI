@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Wand2, Sparkles, Loader2, Plus, Mic, Download, Link } from 'lucide-react';
+import { Wand2, Sparkles, Loader2, Plus, Mic, Download, Link, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,8 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
 import { generateVoiceover } from '@/ai/flows/generate-voiceover';
-import type { Scene, VoiceOption } from '@/lib/types';
-import { voiceOptions, languageOptions, type LanguageOption } from '@/lib/types';
+import type { Scene, VoiceOption, Character } from '@/lib/types';
+import { voiceOptions, languageOptions, type LanguageOption, characters } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
@@ -45,6 +45,7 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
   const [isEnhancing, startEnhancingTransition] = useTransition();
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Algenib');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>('en-US');
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -110,9 +111,11 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
     startVisualGenerationTransition(async () => {
       try {
         const referenceScene = allScenes.find(s => s.id === referenceSceneId);
+        const selectedCharacter = characters.find(c => c.id === selectedCharacterId);
         const result = await generateScene({ 
           prompt: values.visualPrompt,
-          referenceImageUrl: referenceScene?.imageUrl
+          referenceImageUrl: referenceScene?.imageUrl,
+          characterDescription: selectedCharacter?.physicalDescription,
         });
         onSceneUpdate(scene.id, {
           imageUrl: result.imageUrl,
@@ -290,12 +293,31 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
         <Card className="flex-1 flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-xl">Scene Visual</CardTitle>
-                 <CardDescription>Use a previous scene as a visual reference for consistency.</CardDescription>
+                 <CardDescription>Use characters and previous scenes as a visual reference for consistency.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col space-y-4">
-                {availableReferenceScenes.length > 0 && (
-                     <div className="space-y-2">
-                         <Label>Visual Reference</Label>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Character</Label>
+                        <Select onValueChange={(v) => setSelectedCharacterId(v)} value={selectedCharacterId || undefined}>
+                             <SelectTrigger>
+                                <SelectValue placeholder="Select character..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {characters.map((char) => (
+                                     <SelectItem key={char.id} value={char.id}>
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4"/>
+                                            {char.name}
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Visual Reference</Label>
                         <Select onValueChange={(v) => onSetReferenceSceneId(v)} value={referenceSceneId || undefined}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a reference scene..." />
@@ -309,7 +331,7 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
                             </SelectContent>
                         </Select>
                     </div>
-                )}
+                </div>
 
                  <FormField
                     control={form.control}

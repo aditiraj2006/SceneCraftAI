@@ -69,3 +69,26 @@ export const languageOptions = z.object({
 });
 
 export type LanguageOption = z.infer<typeof languageOptionSchema>['value'];
+
+// Placeholder for Character Library feature
+export interface Character {
+    id: string;
+    name: string;
+    physicalDescription: string;
+    referenceImageUrls: string[];
+}
+
+export const characters: Character[] = [
+    {
+        id: 'char-1',
+        name: 'Detective Kaito',
+        physicalDescription: 'A tall, lean man in his late 30s, with short black hair, piercing blue eyes, and a noticeable scar above his left eyebrow. He often wears a classic trench coat over a simple suit.',
+        referenceImageUrls: [],
+    },
+    {
+        id: 'char-2',
+        name: 'Nova',
+        physicalDescription: 'A young woman with vibrant pink hair tied in a high ponytail. She has cybernetic enhancements around her right eye. She wears futuristic, practical clothing with glowing neon accents.',
+        referenceImageUrls: [],
+    }
+];

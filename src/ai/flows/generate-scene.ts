@@ -13,6 +13,7 @@ import {z} from 'genkit';
 const GenerateSceneInputSchema = z.object({
   prompt: z.string().describe('The prompt describing the scene to generate.'),
   referenceImageUrl: z.string().optional().describe('An optional reference image URL (as a data URI) to maintain visual consistency.'),
+  characterDescription: z.string().optional().describe('An optional description of a character to include in the scene for consistency.'),
 });
 export type GenerateSceneInput = z.infer<typeof GenerateSceneInputSchema>;
 
@@ -35,9 +36,15 @@ const generateSceneFlow = ai.defineFlow(
     inputSchema: GenerateSceneInputSchema,
     outputSchema: GenerateSceneOutputSchema,
   },
-  async ({ prompt, referenceImageUrl }) => {
+  async ({ prompt, referenceImageUrl, characterDescription }) => {
     
-    const generationPrompt: (string | { media: { url: string } })[] = [prompt];
+    let fullPrompt = prompt;
+
+    if (characterDescription) {
+        fullPrompt = `${characterDescription}. ${prompt}`;
+    }
+    
+    const generationPrompt: (string | { media: { url: string } })[] = [fullPrompt];
 
     if (referenceImageUrl) {
         generationPrompt.unshift({
