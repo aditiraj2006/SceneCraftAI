@@ -5,17 +5,19 @@ import { useState, useTransition, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Wand2, Sparkles, Loader2, Plus } from 'lucide-react';
+import { Wand2, Sparkles, Loader2, Plus, Mic, Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
+import { generateVoiceover, voiceOptions, VoiceOption } from '@/ai/flows/generate-voiceover';
 import type { Scene } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -28,12 +30,15 @@ const formSchema = z.object({
 type PromptFormProps = {
   scene: Scene;
   onSceneUpdate: (sceneId: string, updatedProps: Partial<Scene>) => void;
-  onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => void;
+  onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description' | 'voiceoverUrl'>, fromSceneId: string) => void;
 };
 
 export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps) {
-  const [isGenerating, startGenerationTransition] = useTransition();
+  const [isGeneratingVisual, startVisualGenerationTransition] = useTransition();
+  const [isGeneratingVoiceover, startVoiceoverGenerationTransition] = useTransition();
   const [isEnhancing, startEnhancingTransition] = useTransition();
+  const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Nova');
+
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -47,7 +52,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
   
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if(name === 'narration' && value.narration) {
+      if(name === 'narration' && value.narration !== undefined) {
         onSceneUpdate(scene.id, { narrationText: value.narration });
       }
       if(name === 'title' && value.title) {
@@ -58,7 +63,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch, scene.id, onSceneUpdate]);
+  }, [form, onSceneUpdate, scene.id]);
 
   const handleEnhance = async () => {
     const currentPrompt = form.getValues('visualPrompt');
@@ -71,7 +76,6 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
       try {
         const result = await enhancePrompt({ basicDescription: currentPrompt });
         form.setValue('visualPrompt', result.enhancedDescription, { shouldValidate: true });
-        onSceneUpdate(scene.id, { aiPromptUsed: result.enhancedDescription });
         toast({
           title: 'Prompt Enhanced',
           description: 'Your prompt has been enriched with cinematic details.',
@@ -87,8 +91,8 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
     });
   };
 
-  function onGenerate(values: z.infer<typeof formSchema>) {
-    startGenerationTransition(async () => {
+  function onGenerateVisual(values: z.infer<typeof formSchema>) {
+    startVisualGenerationTransition(async () => {
       try {
         const result = await generateScene({ prompt: values.visualPrompt });
         onSceneUpdate(scene.id, {
@@ -105,6 +109,35 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
       }
     });
   }
+
+  const handleGenerateVoiceover = () => {
+      const narration = form.getValues('narration');
+      if (!narration) {
+          toast({
+              variant: 'destructive',
+              title: 'Narration is empty',
+              description: 'Please add narration text to generate a voiceover.'
+          });
+          return;
+      }
+      startVoiceoverGenerationTransition(async () => {
+        try {
+            const result = await generateVoiceover({ text: narration, voice: selectedVoice });
+            onSceneUpdate(scene.id, { voiceoverUrl: result.audioUrl });
+            toast({
+                title: 'Voiceover Generated',
+                description: 'The voiceover is ready for preview.'
+            });
+        } catch (error) {
+            console.error('Error generating voiceover:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Voiceover Failed',
+                description: 'Could not generate the voiceover. Please try again.'
+            });
+        }
+      });
+  }
   
   const handleAddNewScene = () => {
       onSceneAdd({
@@ -113,12 +146,22 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
           imageUrl: ''
       }, scene.id);
   }
+  
+  const handleDownloadVoiceover = () => {
+    if (!scene.voiceoverUrl) return;
+    const link = document.createElement('a');
+    link.href = scene.voiceoverUrl;
+    link.download = `${scene.title.replace(/\s+/g, '_')}_voiceover.wav`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
-  const isLoading = isEnhancing || isGenerating;
+  const isLoading = isEnhancing || isGeneratingVisual || isGeneratingVoiceover;
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onGenerate)} className="space-y-6 flex flex-col h-full">
+      <form onSubmit={form.handleSubmit(onGenerateVisual)} className="space-y-4 flex flex-col h-full">
         
         <FormField
             control={form.control}
@@ -135,7 +178,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
         />
 
         <Card>
-            <CardHeader><CardTitle>Narration</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl">Scene Narration</CardTitle></CardHeader>
             <CardContent>
                 <FormField
                     control={form.control}
@@ -146,7 +189,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                         <FormControl>
                             <Textarea
                             placeholder="Your narration or dialogue for this scene..."
-                            className="resize-y min-h-[120px]"
+                            className="resize-y min-h-[120px] text-base"
                             {...field}
                             />
                         </FormControl>
@@ -157,8 +200,47 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
             </CardContent>
         </Card>
 
+        <Card>
+            <CardHeader><CardTitle className="text-xl">Scene Voiceover</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                {scene.voiceoverUrl && (
+                    <div className="space-y-2">
+                        <audio src={scene.voiceoverUrl} controls className="w-full" />
+                        <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleDownloadVoiceover}>
+                            <Download className="mr-2" /> Download Voiceover
+                        </Button>
+                    </div>
+                )}
+                <div className="flex items-center gap-2">
+                    <Select onValueChange={(v) => setSelectedVoice(v as VoiceOption)} defaultValue={selectedVoice}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a voice" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {voiceOptions.options.map(voice => (
+                                <SelectItem key={voice} value={voice}>{voice}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <Button 
+                    type="button" 
+                    onClick={handleGenerateVoiceover}
+                    className="w-full" 
+                    disabled={isLoading}
+                >
+                    {isGeneratingVoiceover ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Mic className="mr-2 h-4 w-4" />
+                    )}
+                    {scene.voiceoverUrl ? 'Regenerate Voiceover' : 'Generate Voiceover'}
+                </Button>
+            </CardContent>
+        </Card>
+
         <Card className="flex-1 flex flex-col">
-            <CardHeader><CardTitle>Visuals</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl">Scene Visual</CardTitle></CardHeader>
             <CardContent className="flex-1 flex flex-col space-y-4">
                  <FormField
                     control={form.control}
@@ -169,7 +251,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                         <FormControl>
                             <Textarea
                             placeholder="e.g., A panoramic view of a futuristic city at sunset..."
-                            className="resize-y flex-1"
+                            className="resize-y flex-1 text-base"
                             {...field}
                             />
                         </FormControl>
@@ -198,7 +280,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                         disabled={isLoading}
                         size="lg"
                     >
-                        {isGenerating ? (
+                        {isGeneratingVisual ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
                             <Sparkles className="mr-2 h-4 w-4" />

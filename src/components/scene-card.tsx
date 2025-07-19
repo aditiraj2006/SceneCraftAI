@@ -12,7 +12,6 @@ type SceneCardProps = {
   scene: Scene;
   index: number;
   onDelete: (id: string) => void;
-  onUpdateNarration: (id: string, text: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
   onDragEnter: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
   onDragEnd: () => void;
@@ -24,7 +23,6 @@ export function SceneCard({
   scene,
   index,
   onDelete,
-  onUpdateNarration,
   onDragStart,
   onDragEnter,
   onDragEnd,
@@ -73,7 +71,7 @@ export function SceneCard({
           </div>
           <div className="p-4 flex-1 flex flex-col justify-between gap-4">
             <h3 className="font-bold text-lg">{scene.title}</h3>
-            <p className="text-sm text-muted-foreground flex-1">
+            <p className="text-sm text-muted-foreground flex-1 line-clamp-3">
               {scene.narrationText}
             </p>
             <div className="flex justify-between items-center">

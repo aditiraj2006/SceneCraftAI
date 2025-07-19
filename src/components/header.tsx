@@ -4,7 +4,11 @@
 import { Film, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function Header() {
+type HeaderProps = {
+  showExport?: boolean;
+}
+
+export function Header({ showExport = true }: HeaderProps) {
   const handleExport = () => {
     window.print();
   };
@@ -19,10 +23,12 @@ export function Header() {
           SceneCraft AI
         </h1>
       </div>
-      <Button onClick={handleExport} variant="default" className="bg-primary hover:bg-primary/90">
-        <FileDown className="w-4 h-4 mr-2" />
-        Finish & Export to PDF
-      </Button>
+      {showExport && (
+        <Button onClick={handleExport} variant="default" className="bg-primary hover:bg-primary/90">
+            <FileDown className="w-4 h-4 mr-2" />
+            Finish & Export to PDF
+        </Button>
+      )}
     </header>
   );
 }

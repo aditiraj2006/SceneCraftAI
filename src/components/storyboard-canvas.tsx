@@ -4,19 +4,17 @@
 import { useRef, useState } from 'react';
 import type { Scene } from '@/lib/types';
 import { SceneCard } from '@/components/scene-card';
-import { Film, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Film } from 'lucide-react';
 
 type StoryboardCanvasProps = {
   scenes: Scene[];
   onReorder: (scenes: Scene[]) => void;
   onDelete: (id: string) => void;
-  onUpdateNarration: (id: string, text: string) => void;
   activeSceneId: string | null;
   onSetActiveScene: (id: string) => void;
 };
 
-export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActiveScene, ...props }: StoryboardCanvasProps) {
+export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActiveScene, onDelete }: StoryboardCanvasProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const scenesRef = useRef(scenes);
@@ -72,12 +70,12 @@ export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActive
         <SceneCard
           scene={scene}
           index={index}
+          onDelete={onDelete}
           onDragStart={handleDragStart}
           onDragEnter={handleDragEnter}
           onDragEnd={handleDragEnd}
           isDragging={draggedIndex === index}
           isActive={activeSceneId === scene.id}
-          {...props}
         />
         </div>
       ))}

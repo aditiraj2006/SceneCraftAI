@@ -26,7 +26,7 @@ export default function MultistepStoryboarder() {
       title: ks.title,
       description: ks.description,
       narrationText: `Scene ${index + 1}: Start writing your narration here.`,
-      imageUrl: '', // Will be generated in the editor
+      imageUrl: '', 
       aiPromptUsed: '',
     }));
     setScenes(initialScenes);
@@ -35,10 +35,17 @@ export default function MultistepStoryboarder() {
   
   const handleProceedToEditor = (updatedStory: Story) => {
     setStory(updatedStory);
-    // Ensure scenes are updated with any changes from the summary page
-    const updatedScenes = updatedStory.keyScenes.map((ks, index) => {
-        const existingScene = scenes.find(s => s.title === ks.title); // This is a bit brittle, might need IDs
-        return existingScene || {
+    const sceneMap = new Map(scenes.map(s => [s.title, s]));
+    
+    const finalScenes = updatedStory.keyScenes.map((ks, index) => {
+        const existingScene = sceneMap.get(ks.title);
+        if (existingScene) {
+            return {
+                ...existingScene,
+                description: ks.description,
+            }
+        }
+        return {
              id: crypto.randomUUID(),
              title: ks.title,
              description: ks.description,
@@ -47,19 +54,8 @@ export default function MultistepStoryboarder() {
              aiPromptUsed: '',
         }
     });
-    const newScenes = updatedStory.keyScenes.filter(ks => !scenes.some(s => s.title === ks.title)).map((ks, index) => ({
-        id: crypto.randomUUID(),
-        title: ks.title,
-        description: ks.description,
-        narrationText: `Scene ${index + 1}: Start writing your narration here.`,
-        imageUrl: '',
-        aiPromptUsed: '',
-    }));
-    const finalScenes = [...updatedScenes, ...newScenes];
-    
-    // A simple re-ordering based on the new key scenes
-    const reorderedScenes = updatedStory.keyScenes.map(ks => finalScenes.find(s => s.title === ks.title)!);
-    setScenes(reorderedScenes.filter(Boolean)); // Filter out any undefineds
+
+    setScenes(finalScenes);
     goToStep('editor');
   };
 
@@ -78,7 +74,7 @@ export default function MultistepStoryboarder() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
-      <Header />
+      <Header showExport={step === 'editor'} />
       <main className="flex-1 overflow-hidden">
         {renderStep()}
       </main>

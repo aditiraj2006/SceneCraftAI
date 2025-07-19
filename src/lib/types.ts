@@ -5,6 +5,7 @@ export interface Scene {
   narrationText: string;
   imageUrl: string;
   aiPromptUsed: string;
+  voiceoverUrl?: string;
   dataAiHint?: string;
 }
 

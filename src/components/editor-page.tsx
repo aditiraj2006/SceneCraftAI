@@ -41,18 +41,15 @@ export function EditorPage({ initialScenes, onBack }: EditorPageProps) {
     );
   }
 
-  const updateSceneNarration = (sceneId: string, newNarration: string) => {
-    setScenes(prevScenes =>
-      prevScenes.map(scene =>
-        scene.id === sceneId ? { ...scene, narrationText: newNarration } : scene
-      )
-    );
-  };
-
   const deleteScene = (sceneId: string) => {
-    setScenes(prevScenes => prevScenes.filter(scene => scene.id !== sceneId));
+    const fromIndex = scenes.findIndex(s => s.id === sceneId);
+    const newScenes = scenes.filter(scene => scene.id !== sceneId);
+    setScenes(newScenes);
+
     if (activeSceneId === sceneId) {
-        setActiveSceneId(scenes[0]?.id || null);
+        // set active to the next scene, or the previous one, or null if empty
+        const nextActiveIndex = Math.max(0, fromIndex -1);
+        setActiveSceneId(newScenes[nextActiveIndex]?.id || null);
     }
   };
   
@@ -60,16 +57,16 @@ export function EditorPage({ initialScenes, onBack }: EditorPageProps) {
     setScenes(reorderedScenes);
   };
 
-  const activeScene = scenes.find(s => s.id === activeSceneId);
+  const activeScene = scenes.find(s => s.id === activeSceneId) || null;
 
   return (
     <div className="flex flex-col h-full">
-        <div className="p-4 border-b">
+        <div className="no-print p-4 border-b">
             <Button variant="outline" onClick={onBack}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Summary & Key Scenes
             </Button>
         </div>
-        <div className="flex-1 grid md:grid-cols-[400px_1fr] overflow-hidden">
+        <div className="flex-1 grid md:grid-cols-[450px_1fr] overflow-hidden">
             <aside className="no-print flex flex-col p-4 border-r overflow-y-auto bg-card">
                 {activeScene ? (
                     <PromptForm 
@@ -90,7 +87,6 @@ export function EditorPage({ initialScenes, onBack }: EditorPageProps) {
                 scenes={scenes}
                 onReorder={reorderScenes}
                 onDelete={deleteScene}
-                onUpdateNarration={updateSceneNarration}
                 activeSceneId={activeSceneId}
                 onSetActiveScene={setActiveSceneId}
             />
