@@ -8,9 +8,10 @@ import { SummaryPage } from '@/components/summary-page';
 import { EditorPage } from '@/components/editor-page';
 import { Header } from '@/components/header';
 import { ExportPage } from '@/components/export-page';
+import { TrailerPage } from '@/components/trailer-page';
 
 
-export type WorkflowStep = 'initial' | 'summary' | 'editor' | 'export';
+export type WorkflowStep = 'initial' | 'summary' | 'editor' | 'export' | 'trailer';
 
 export default function MultistepStoryboarder() {
   const [step, setStep] = useState<WorkflowStep>('initial');
@@ -79,7 +80,9 @@ export default function MultistepStoryboarder() {
       case 'editor':
         return <EditorPage initialScenes={scenes} story={story!} onScenesUpdate={handleUpdateScenes} onBack={() => goToStep('summary')} />;
       case 'export':
-        return <ExportPage story={story!} scenes={scenes} onStoryUpdate={handleUpdateStory} onBack={() => goToStep('editor')} />
+        return <ExportPage story={story!} scenes={scenes} onStoryUpdate={handleUpdateStory} onBack={() => goToStep('editor')} onNavigateToTrailer={() => goToStep('trailer')} />
+      case 'trailer':
+        return <TrailerPage story={story!} scenes={scenes} onBack={() => goToStep('export')} />
       default:
         return <InitialInputPage onSummaryGenerated={handleSummaryGenerated} />;
     }

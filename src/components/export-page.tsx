@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Scene, Story } from '@/lib/types';
-import { ArrowLeft, Edit, Download, Plus, Trash2, GitBranch, Share2, Copy, Image as ImageIcon, Speaker } from 'lucide-react';
+import { ArrowLeft, Edit, Download, Plus, Trash2, GitBranch, Share2, Copy, Image as ImageIcon, Speaker, Clapperboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,92 +15,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PrintableView } from './printable-view';
+
 
 type ExportPageProps = {
   story: Story;
   scenes: Scene[];
   onStoryUpdate: (story: Story) => void;
   onBack: () => void;
+  onNavigateToTrailer: () => void;
 };
 
-type PrintOptions = {
-    imagesPerPage: '1' | '2' | '4';
-    includeImages: boolean;
-    includeNarration: boolean;
-    includePrompts: boolean;
-    includeNumbers: boolean;
-}
-
-const PrintableView = ({story, scenes, options}: {story: Story, scenes: Scene[], options: PrintOptions}) => {
-    
-    const sceneChunks: Scene[][] = [];
-    if (options.imagesPerPage === '1') {
-        scenes.forEach(scene => sceneChunks.push([scene]));
-    } else {
-        for (let i = 0; i < scenes.length; i += parseInt(options.imagesPerPage, 10)) {
-            sceneChunks.push(scenes.slice(i, i + parseInt(options.imagesPerPage, 10)));
-        }
-    }
-
-    return (
-        <div className="print-only">
-            {/* Title Page */}
-            <div className="flex flex-col items-center justify-center h-screen">
-                 <h1 className="text-5xl font-bold mb-4 text-center">{story.title}</h1>
-                 <p className="text-xl mt-4 text-center max-w-3xl">{story.summary}</p>
-            </div>
-           
-            {/* Scenes */}
-            {sceneChunks.map((chunk, chunkIndex) => (
-                 <div key={chunkIndex} className="page-break-before">
-                    <div className={cn(
-                        "grid gap-8 items-start h-full",
-                        options.imagesPerPage === '1' && "grid-cols-1 grid-rows-1",
-                        options.imagesPerPage === '2' && "grid-cols-1 grid-rows-2",
-                        options.imagesPerPage === '4' && "grid-cols-2 grid-rows-2",
-                    )}>
-                        {chunk.map((scene) => {
-                            const sceneNumber = scenes.findIndex(s => s.id === scene.id) + 1;
-                            return (
-                                <div key={scene.id} className="flex flex-col h-full border-2 rounded-lg p-4">
-                                    <div className="flex-1 space-y-2">
-                                        {options.includeNumbers && <h2 className="text-2xl font-bold">{sceneNumber}. {scene.title}</h2>}
-                                        {!options.includeNumbers && <h2 className="text-2xl font-bold">{scene.title}</h2>}
-                                        
-                                        {options.includeNarration && (
-                                            <div className="space-y-1">
-                                                <h3 className="font-semibold">Narration:</h3>
-                                                <p className="text-base">{scene.narrationText}</p>
-                                            </div>
-                                        )}
-                                        {options.includePrompts && scene.aiPromptUsed && (
-                                            <div className="space-y-1">
-                                                <h3 className="font-semibold">Visual Prompt:</h3>
-                                                <p className="text-sm italic text-gray-600">{scene.aiPromptUsed}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {options.includeImages && (
-                                         <div className="mt-4 aspect-video bg-gray-100 border rounded-lg flex items-center justify-center">
-                                           {scene.imageUrl ? (
-                                                <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-contain rounded-md"/>
-                                            ) : (
-                                                <div className="text-gray-500 flex flex-col items-center">
-                                                   <ImageIcon className="w-16 h-16" />
-                                                   <span>No Visual</span>
-                                                </div>
-                                            )}
-                                       </div>
-                                    )}
-                               </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            ))}
-        </div>
-    )
-}
 
 function downloadDataUri(dataUri: string, filename: string) {
     const link = document.createElement('a');
@@ -111,11 +36,11 @@ function downloadDataUri(dataUri: string, filename: string) {
     document.body.removeChild(link);
 }
 
-export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageProps) {
+export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToTrailer }: ExportPageProps) {
     const { toast } = useToast();
     const [shareUrl, setShareUrl] = useState('');
-    const [printOptions, setPrintOptions] = useState<PrintOptions>({
-        imagesPerPage: '2',
+    const [printOptions, setPrintOptions] = useState({
+        imagesPerPage: '2' as '1' | '2' | '4',
         includeImages: true,
         includeNarration: true,
         includePrompts: false,
@@ -326,9 +251,13 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                     </div>
 
                     <div className="space-y-4 p-4 border rounded-lg">
-                        <h4 className="font-medium">Batch Export</h4>
+                        <h4 className="font-medium">Export Assets</h4>
                         <Button variant="outline" className="w-full" onClick={handleDownloadAllImages}><ImageIcon className="mr-2 h-4 w-4" /> Download All Images</Button>
                         <Button variant="outline" className="w-full" onClick={handleDownloadAllVoiceovers}><Speaker className="mr-2 h-4 w-4" /> Download All Voiceovers</Button>
+                        <Separator />
+                        <Button variant="default" className="w-full bg-accent hover:bg-accent/90" onClick={onNavigateToTrailer}>
+                            <Clapperboard className="mr-2 h-4 w-4" /> Generate Video Trailer
+                        </Button>
                     </div>
                     
                      <div className="space-y-4 p-4 border rounded-lg">
@@ -349,5 +278,3 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
     </>
   );
 }
-
-    

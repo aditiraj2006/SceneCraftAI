@@ -18,10 +18,21 @@ export interface KeyScene {
     narration: string;
 }
 
+export interface Trailer {
+    id: string;
+    url: string;
+    thumbnailUrl: string;
+    title: string;
+    duration: string;
+    generatedAt: string;
+    config: TrailerConfig;
+}
+
 export interface Story {
     title: string;
     summary: string;
     keyScenes: KeyScene[];
+    trailers?: Trailer[];
 }
 
 export const voiceOptions = z.enum([
@@ -92,3 +103,13 @@ export const characters: Character[] = [
         referenceImageUrls: [],
     }
 ];
+
+
+export type TrailerConfig = {
+  length: '15s' | '30s' | '60s';
+  tone: 'Exciting' | 'Mysterious' | 'Dramatic' | 'Hopeful';
+  voiceover: 'Full' | 'Highlights';
+  includeMusic: boolean;
+  musicGenre: 'Epic' | 'Suspenseful' | 'Upbeat' | 'None';
+  includeTextOverlays: boolean;
+};
