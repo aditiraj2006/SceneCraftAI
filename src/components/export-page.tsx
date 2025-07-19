@@ -12,6 +12,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
+import { useToast } from '@/hooks/use-toast';
 
 type ExportPageProps = {
   story: Story;
@@ -21,7 +22,8 @@ type ExportPageProps = {
 };
 
 export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageProps) {
-    
+    const { toast } = useToast();
+
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onStoryUpdate({...story, title: e.target.value});
     }
@@ -29,6 +31,22 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         // This is a placeholder as story doesn't have a description field yet
     }
+
+    const handleCopyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            toast({
+                title: "Link Copied!",
+                description: "The shareable link has been copied to your clipboard.",
+            });
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            toast({
+                variant: "destructive",
+                title: "Copy Failed",
+                description: "Could not copy the link to your clipboard.",
+            });
+        });
+    };
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8 space-y-8 bg-muted/30">
@@ -97,23 +115,23 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                     
                     <Separator />
                     
-                    <div className="space-y-4 opacity-50 cursor-not-allowed">
-                        <h4 className="font-medium">Collaboration (Coming Soon)</h4>
+                    <div className="space-y-4">
+                        <h4 className="font-medium">Collaboration</h4>
                         <div className="flex gap-2">
-                            <Input placeholder="Invite by email..." disabled/>
-                            <Button disabled>Send Invite</Button>
+                            <Input placeholder="Invite by email..."/>
+                            <Button>Send Invite</Button>
                         </div>
                          <div className="flex items-center space-x-2">
-                            <Switch id="public-sharing" disabled />
+                            <Switch id="public-sharing" />
                             <Label htmlFor="public-sharing">Enable Public Link Sharing</Label>
                         </div>
                     </div>
                     
                     <Separator />
 
-                    <div className="space-y-2 opacity-50 cursor-not-allowed">
-                        <h4 className="font-medium">Version History (Coming Soon)</h4>
-                        <Button variant="outline" className="w-full" disabled>
+                    <div className="space-y-2">
+                        <h4 className="font-medium">Version History</h4>
+                        <Button variant="outline" className="w-full">
                             <GitBranch className="mr-2 h-4 w-4" /> View Version History
                         </Button>
                     </div>
@@ -165,17 +183,19 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                         </Button>
                     </div>
 
-                    <div className="space-y-4 p-4 border rounded-lg opacity-50 cursor-not-allowed">
-                        <h4 className="font-medium">Batch Export (Coming Soon)</h4>
-                        <Button variant="outline" className="w-full" disabled><ImageIcon className="mr-2 h-4 w-4" /> Download All Images (.zip)</Button>
-                        <Button variant="outline" className="w-full" disabled><Speaker className="mr-2 h-4 w-4" /> Download All Voiceovers (.zip)</Button>
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-medium">Batch Export</h4>
+                        <Button variant="outline" className="w-full"><ImageIcon className="mr-2 h-4 w-4" /> Download All Images (.zip)</Button>
+                        <Button variant="outline" className="w-full"><Speaker className="mr-2 h-4 w-4" /> Download All Voiceovers (.zip)</Button>
                     </div>
                     
-                     <div className="space-y-4 p-4 border rounded-lg opacity-50 cursor-not-allowed">
-                        <h4 className="font-medium">Share (Coming Soon)</h4>
+                     <div className="space-y-4 p-4 border rounded-lg">
+                        <h4 className="font-medium">Share</h4>
                          <div className="flex gap-2">
-                            <Input value="https://scenecraft.ai/share/..." readOnly disabled />
-                            <Button variant="secondary" size="icon" disabled><Copy className="h-4 w-4" /></Button>
+                            <Input value="https://scenecraft.ai/share/..." readOnly />
+                            <Button variant="secondary" size="icon" onClick={() => handleCopyToClipboard('https://scenecraft.ai/share/...')}>
+                                <Copy className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
