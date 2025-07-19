@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Wand2, Sparkles, Loader2, Plus, Mic, Download } from 'lucide-react';
+import { Wand2, Sparkles, Loader2, Plus, Mic, Download, Link } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -17,8 +17,10 @@ import { generateScene } from '@/ai/flows/generate-scene';
 import { generateVoiceover } from '@/ai/flows/generate-voiceover';
 import type { Scene, VoiceOption } from '@/lib/types';
 import { voiceOptions, languageOptions, type LanguageOption } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -30,11 +32,14 @@ const formSchema = z.object({
 
 type PromptFormProps = {
   scene: Scene;
+  allScenes: Scene[];
+  referenceSceneId: string | null;
+  onSetReferenceSceneId: (id: string | null) => void;
   onSceneUpdate: (sceneId: string, updatedProps: Partial<Scene>) => void;
   onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => void;
 };
 
-export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps) {
+export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceSceneId, onSceneUpdate, onSceneAdd }: PromptFormProps) {
   const [isGeneratingVisual, startVisualGenerationTransition] = useTransition();
   const [isGeneratingVoiceover, startVoiceoverGenerationTransition] = useTransition();
   const [isEnhancing, startEnhancingTransition] = useTransition();
@@ -51,6 +56,14 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
       narration: scene.narrationText,
     },
   });
+  
+  useEffect(() => {
+    form.reset({
+      title: scene.title,
+      visualPrompt: scene.aiPromptUsed || scene.description,
+      narration: scene.narrationText,
+    });
+  }, [scene, form]);
   
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -96,7 +109,11 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
   function onGenerateVisual(values: z.infer<typeof formSchema>) {
     startVisualGenerationTransition(async () => {
       try {
-        const result = await generateScene({ prompt: values.visualPrompt });
+        const referenceScene = allScenes.find(s => s.id === referenceSceneId);
+        const result = await generateScene({ 
+          prompt: values.visualPrompt,
+          referenceImageUrl: referenceScene?.imageUrl
+        });
         onSceneUpdate(scene.id, {
           imageUrl: result.imageUrl,
           aiPromptUsed: values.visualPrompt,
@@ -160,6 +177,9 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
   }
 
   const isLoading = isEnhancing || isGeneratingVisual || isGeneratingVoiceover;
+
+  const currentSceneIndex = allScenes.findIndex(s => s.id === scene.id);
+  const availableReferenceScenes = allScenes.slice(0, currentSceneIndex).filter(s => s.imageUrl);
 
   return (
     <Form {...form}>
@@ -225,7 +245,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                     <div className="space-y-2">
                         <audio src={scene.voiceoverUrl} controls className="w-full" />
                         <Button type="button" variant="outline" size="sm" className="w-full" onClick={handleDownloadVoiceover}>
-                            <Download className="mr-2" /> Download Voiceover
+                            <Download className="mr-2 h-4 w-4" /> Download Voiceover
                         </Button>
                     </div>
                 )}
@@ -270,8 +290,28 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
         <Card className="flex-1 flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-xl">Scene Visual</CardTitle>
+                 <CardDescription>Use a previous scene as a visual reference for consistency.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col space-y-4">
+                {availableReferenceScenes.length > 0 && (
+                     <div className="space-y-2">
+                         <Label>Visual Reference</Label>
+                        <Select onValueChange={(v) => onSetReferenceSceneId(v)} value={referenceSceneId || ""}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a reference scene..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {availableReferenceScenes.map((refScene, index) => (
+                                    <SelectItem key={refScene.id} value={refScene.id}>
+                                        Scene {allScenes.findIndex(s => s.id === refScene.id) + 1}: {refScene.title}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+
                  <FormField
                     control={form.control}
                     name="visualPrompt"

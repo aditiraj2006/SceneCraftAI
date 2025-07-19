@@ -17,10 +17,23 @@ type EditorPageProps = {
 export function EditorPage({ initialScenes, onScenesUpdate, onBack }: EditorPageProps) {
   const [scenes, setScenes] = useState<Scene[]>(initialScenes);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(initialScenes[0]?.id || null);
+  const [referenceSceneId, setReferenceSceneId] = useState<string | null>(null);
 
   useEffect(() => {
     onScenesUpdate(scenes);
   }, [scenes, onScenesUpdate]);
+  
+   useEffect(() => {
+    // When the active scene changes, clear the reference scene if it's the same or later
+    if (activeSceneId && referenceSceneId) {
+        const activeIndex = scenes.findIndex(s => s.id === activeSceneId);
+        const referenceIndex = scenes.findIndex(s => s.id === referenceSceneId);
+        if (referenceIndex >= activeIndex) {
+            setReferenceSceneId(null);
+        }
+    }
+  }, [activeSceneId, referenceSceneId, scenes]);
+
 
   const addScene = (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => {
     const newScene: Scene = { 
@@ -76,7 +89,10 @@ export function EditorPage({ initialScenes, onScenesUpdate, onBack }: EditorPage
                 {activeScene ? (
                     <PromptForm 
                         key={activeScene.id}
-                        scene={activeScene} 
+                        scene={activeScene}
+                        allScenes={scenes}
+                        referenceSceneId={referenceSceneId}
+                        onSetReferenceSceneId={setReferenceSceneId}
                         onSceneUpdate={updateScene}
                         onSceneAdd={addScene}
                     />
