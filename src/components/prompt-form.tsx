@@ -296,12 +296,11 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
                 {availableReferenceScenes.length > 0 && (
                      <div className="space-y-2">
                          <Label>Visual Reference</Label>
-                        <Select onValueChange={(v) => onSetReferenceSceneId(v)} value={referenceSceneId || ""}>
+                        <Select onValueChange={(v) => onSetReferenceSceneId(v)} value={referenceSceneId || undefined}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a reference scene..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">None</SelectItem>
                                 {availableReferenceScenes.map((refScene, index) => (
                                     <SelectItem key={refScene.id} value={refScene.id}>
                                         Scene {allScenes.findIndex(s => s.id === refScene.id) + 1}: {refScene.title}
@@ -368,3 +367,5 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
     </Form>
   );
 }
+
+    
