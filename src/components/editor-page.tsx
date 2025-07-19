@@ -79,14 +79,14 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
   const activeScene = scenes.find(s => s.id === activeSceneId) || null;
 
   return (
-    <div className="flex flex-col h-full no-print">
-        <div className="p-4 border-b">
+    <div className="flex flex-col h-full">
+        <div className="p-4 border-b no-print">
             <Button variant="outline" onClick={onBack}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Summary & Key Scenes
             </Button>
         </div>
         <div className="flex-1 grid md:grid-cols-[450px_1fr] overflow-hidden">
-            <aside className="flex flex-col p-4 border-r overflow-y-auto bg-card">
+            <aside className="flex flex-col p-4 border-r overflow-y-auto bg-card no-print">
                 {activeScene ? (
                     <PromptForm 
                         key={activeScene.id}
@@ -104,7 +104,7 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
                 )}
             </aside>
 
-            <section className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-muted/30">
+            <section className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-muted/30 no-print">
                 <StoryboardCanvas
                     scenes={scenes}
                     onReorder={reorderScenes}

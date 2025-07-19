@@ -91,6 +91,7 @@ export default function MultistepStoryboarder() {
   const showExport = step === 'editor' || step === 'export';
   const exportAction = step === 'editor' ? () => goToStep('export') : () => window.print();
   const exportText = step === 'editor' ? 'Finish & Export' : 'Generate PDF';
+  const isExportPage = step === 'export';
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
@@ -98,10 +99,12 @@ export default function MultistepStoryboarder() {
         showExport={showExport} 
         onExport={exportAction} 
         exportText={exportText}
+        isExportPage={isExportPage}
       />
       <main className="flex-1 overflow-auto no-print">
         {renderStep()}
       </main>
+      {isExportPage && <PrintableView story={story!} scenes={scenes} />}
     </div>
   );
 }

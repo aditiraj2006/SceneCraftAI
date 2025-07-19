@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PrintableView } from './printable-view';
 
 
 type ExportPageProps = {
@@ -39,13 +38,6 @@ function downloadDataUri(dataUri: string, filename: string) {
 export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToTrailer }: ExportPageProps) {
     const { toast } = useToast();
     const [shareUrl, setShareUrl] = useState('');
-    const [printOptions, setPrintOptions] = useState({
-        imagesPerPage: '2' as '1' | '2' | '4',
-        includeImages: true,
-        includeNarration: true,
-        includePrompts: false,
-        includeNumbers: true,
-    });
 
     useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -113,7 +105,6 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToT
 
 
   return (
-    <>
     <div className="h-full overflow-y-auto p-4 md:p-8 space-y-8 bg-muted/30 no-print">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
@@ -212,39 +203,6 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToT
                 <CardContent className="space-y-6">
                     <div className="space-y-4 p-4 border rounded-lg">
                         <h4 className="font-medium">Export as PDF</h4>
-                        <div className="space-y-2">
-                            <Label>Layout Options</Label>
-                             <Select 
-                                value={printOptions.imagesPerPage} 
-                                onValueChange={(v) => setPrintOptions(prev => ({...prev, imagesPerPage: v as '1'|'2'|'4'}))}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select layout" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">1 Image per Page</SelectItem>
-                                    <SelectItem value="2">2 Images per Page</SelectItem>
-                                    <SelectItem value="4">Grid Layout (4 per page)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="include-images" checked={printOptions.includeImages} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeImages: !!checked}))}/>
-                                <Label htmlFor="include-images">Scene Images</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="include-narration" checked={printOptions.includeNarration} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeNarration: !!checked}))} />
-                                <Label htmlFor="include-narration">Narration Text</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="include-prompts" checked={printOptions.includePrompts} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includePrompts: !!checked}))}/>
-                                <Label htmlFor="include-prompts">Visual Prompts</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="include-numbers" checked={printOptions.includeNumbers} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeNumbers: !!checked}))} />
-                                <Label htmlFor="include-numbers">Scene Numbers</Label>
-                            </div>
-                        </div>
                         <Button className="w-full" onClick={() => window.print()}>
                             <Download className="mr-2 h-4 w-4" /> Generate PDF
                         </Button>
@@ -274,7 +232,5 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToT
         </div>
       </div>
     </div>
-    <PrintableView story={story} scenes={scenes} options={printOptions} />
-    </>
   );
 }
