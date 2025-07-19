@@ -3,7 +3,7 @@
 
 import { useRef, useState } from 'react';
 import type { Scene } from '@/lib/types';
-import { SceneCard } from '@/components/scene-card';
+import { SceneCard, SceneCardSkeleton } from '@/components/scene-card';
 import { Film } from 'lucide-react';
 
 type StoryboardCanvasProps = {
@@ -67,16 +67,18 @@ export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActive
          {dragOverIndex === index && draggedIndex !== null && (
             <div className="h-2 bg-primary/50 rounded-full my-2 animate-pulse" />
           )}
-        <SceneCard
-          scene={scene}
-          index={index}
-          onDelete={onDelete}
-          onDragStart={handleDragStart}
-          onDragEnter={handleDragEnter}
-          onDragEnd={handleDragEnd}
-          isDragging={draggedIndex === index}
-          isActive={activeSceneId === scene.id}
-        />
+        <React.Suspense fallback={<SceneCardSkeleton />}>
+          <SceneCard
+            scene={scene}
+            index={index}
+            onDelete={onDelete}
+            onDragStart={handleDragStart}
+            onDragEnter={handleDragEnter}
+            onDragEnd={handleDragEnd}
+            isDragging={draggedIndex === index}
+            isActive={activeSceneId === scene.id}
+          />
+        </React.Suspense>
         </div>
       ))}
     </div>

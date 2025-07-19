@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 
 type ExportPageProps = {
@@ -129,7 +130,7 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack, onNavigateToT
                         <Card key={scene.id} className="overflow-hidden group relative">
                             <div className="relative aspect-video bg-muted">
                                 {scene.imageUrl ? (
-                                    <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-cover"/>
+                                    <Image src={scene.imageUrl} alt={scene.title} layout="fill" objectFit="cover"/>
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                                         <ImageIcon className="w-8 h-8"/>

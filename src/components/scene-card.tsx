@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 type SceneCardProps = {
   scene: Scene;
@@ -53,16 +54,17 @@ export function SceneCard({
             {scene.imageUrl ? (
                 <Image
                     src={scene.imageUrl}
-                    alt={scene.aiPromptUsed}
+                    alt={scene.aiPromptUsed || 'Generated scene image'}
                     width={300}
                     height={169}
                     data-ai-hint={scene.dataAiHint}
                     className="object-cover w-full h-full"
+                    priority={index < 3} // Eager load the first few images
                 />
             ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4">
                     <ImageIcon className="w-10 h-10 mb-2"/>
-                    <p className="text-sm">No Visual Generated</p>
+                    <p className="text-sm text-center">No Visual Generated</p>
                 </div>
             )}
              <div className="absolute top-2 left-2 p-1 bg-black/50 rounded-full text-white text-sm font-bold w-8 h-8 flex items-center justify-center">
@@ -95,5 +97,28 @@ export function SceneCard({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export function SceneCardSkeleton() {
+  return (
+    <Card className="overflow-hidden w-full">
+      <CardContent className="p-0 flex flex-col sm:flex-row">
+        <div className="relative w-full sm:w-1/3 aspect-video sm:aspect-auto">
+          <Skeleton className="w-full h-full" />
+        </div>
+        <div className="p-4 flex-1 flex flex-col justify-between gap-4">
+          <Skeleton className="h-6 w-3/4" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-6 w-6" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
