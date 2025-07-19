@@ -14,8 +14,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
-import { generateVoiceover, voiceOptions, VoiceOption } from '@/ai/flows/generate-voiceover';
-import type { Scene } from '@/lib/types';
+import { generateVoiceover } from '@/ai/flows/generate-voiceover';
+import type { Scene, VoiceOption } from '@/lib/types';
+import { voiceOptions } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -30,7 +31,7 @@ const formSchema = z.object({
 type PromptFormProps = {
   scene: Scene;
   onSceneUpdate: (sceneId: string, updatedProps: Partial<Scene>) => void;
-  onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description' | 'voiceoverUrl'>, fromSceneId: string) => void;
+  onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => void;
 };
 
 export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps) {

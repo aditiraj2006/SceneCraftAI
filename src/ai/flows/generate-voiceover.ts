@@ -13,17 +13,9 @@ import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import wav from 'wav';
+import { voiceOptions } from '@/lib/types';
+import type { VoiceOption } from '@/lib/types';
 
-export const voiceOptions = z.enum([
-    'Echo', 
-    'Fable', 
-    'Onyx', 
-    'Nova', 
-    'Shimmer',
-    'alloy',
-    'rocky',
-]);
-export type VoiceOption = z.infer<typeof voiceOptions>;
 
 const GenerateVoiceoverInputSchema = z.object({
   text: z.string().describe('The text to be converted to speech.'),
