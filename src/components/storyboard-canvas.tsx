@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react';
 import type { Scene } from '@/lib/types';
 import { SceneCard } from '@/components/scene-card';
-import { Film } from 'lucide-react';
+import { Film, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type StoryboardCanvasProps = {
   scenes: Scene[];
@@ -43,10 +44,18 @@ export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanv
 
   if (scenes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg">
-        <Film className="w-16 h-16 text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-semibold text-muted-foreground">Your Storyboard is Empty</h2>
-        <p className="text-muted-foreground mt-2">Generate a scene to get started.</p>
+      <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg bg-card p-12 text-center">
+        <div className="p-4 bg-primary/10 rounded-full mb-4">
+            <Film className="w-12 h-12 text-primary" />
+        </div>
+        <h2 className="text-2xl font-semibold text-foreground">Your Storyboard is Empty</h2>
+        <p className="text-muted-foreground mt-2 max-w-sm">
+          Use the form on the left to describe your first scene. Let your creativity flow and see your story come to life!
+        </p>
+        <Button className="mt-6" size="lg">
+            <Sparkles className="mr-2"/>
+            Generate Your First Scene
+        </Button>
       </div>
     );
   }

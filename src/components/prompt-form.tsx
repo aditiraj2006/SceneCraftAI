@@ -4,16 +4,15 @@ import { useState, useTransition } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Wand2, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Wand2, Sparkles, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
 import type { Scene } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const formSchema = z.object({
   prompt: z.string().min(10, {
@@ -84,30 +83,53 @@ export function PromptForm({ onSceneAdd }: PromptFormProps) {
     });
   }
 
+  const isLoading = isEnhancing || isGenerating;
+
   return (
-    <Card className="w-full border-0 md:border md:shadow-sm">
-        <CardContent className="p-0 md:p-6">
-            <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                control={form.control}
-                name="prompt"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Scene Prompt</FormLabel>
-                    <FormControl>
-                        <Textarea
-                        placeholder="e.g., A panoramic view of a futuristic city at sunset, with flying vehicles."
-                        className="resize-y min-h-[120px]"
-                        {...field}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="button" onClick={handleEnhance} variant="outline" className="w-full" disabled={isEnhancing || isGenerating}>
+    <div className="flex flex-col h-full">
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 flex flex-col flex-1">
+            <FormField
+            control={form.control}
+            name="prompt"
+            render={({ field }) => (
+                <FormItem className="flex-1 flex flex-col">
+                <FormLabel>Scene Prompt</FormLabel>
+                <FormControl>
+                    <Textarea
+                    placeholder="e.g., A panoramic view of a futuristic city at sunset, with flying vehicles."
+                    className="resize-y flex-1"
+                    {...field}
+                    />
+                </FormControl>
+                <FormDescription>
+                    Describe the scene you want to visualize.
+                </FormDescription>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <div className="flex flex-col gap-2 mt-auto">
+                <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading}
+                    size="lg"
+                >
+                    {isGenerating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    Generate Scene
+                </Button>
+                <Button 
+                    type="button" 
+                    onClick={handleEnhance} 
+                    variant="outline" 
+                    className="w-full" 
+                    disabled={isLoading}
+                >
                     {isEnhancing ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -115,19 +137,9 @@ export function PromptForm({ onSceneAdd }: PromptFormProps) {
                     )}
                     Enhance with AI
                 </Button>
-                <Button type="submit" className="w-full" disabled={isGenerating || isEnhancing}>
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <ImageIcon className="mr-2 h-4 w-4" />
-                    )}
-                    Generate Scene
-                </Button>
-                </div>
-            </form>
-            </Form>
-        </CardContent>
-    </Card>
-
+            </div>
+        </form>
+        </Form>
+    </div>
   );
 }
