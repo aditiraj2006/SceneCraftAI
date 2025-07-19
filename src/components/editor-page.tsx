@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Scene } from '@/lib/types';
 import { PromptForm } from '@/components/prompt-form';
 import { StoryboardCanvas } from '@/components/storyboard-canvas';
@@ -10,12 +10,17 @@ import { ArrowLeft } from 'lucide-react';
 
 type EditorPageProps = {
     initialScenes: Scene[];
+    onScenesUpdate: (scenes: Scene[]) => void;
     onBack: () => void;
 }
 
-export function EditorPage({ initialScenes, onBack }: EditorPageProps) {
+export function EditorPage({ initialScenes, onScenesUpdate, onBack }: EditorPageProps) {
   const [scenes, setScenes] = useState<Scene[]>(initialScenes);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(initialScenes[0]?.id || null);
+
+  useEffect(() => {
+    onScenesUpdate(scenes);
+  }, [scenes, onScenesUpdate]);
 
   const addScene = (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => {
     const newScene: Scene = { 
@@ -82,14 +87,14 @@ export function EditorPage({ initialScenes, onBack }: EditorPageProps) {
                 )}
             </aside>
 
-            <section className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-muted/30">
-            <StoryboardCanvas
-                scenes={scenes}
-                onReorder={reorderScenes}
-                onDelete={deleteScene}
-                activeSceneId={activeSceneId}
-                onSetActiveScene={setActiveSceneId}
-            />
+            <section className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-muted/30 print-only">
+                <StoryboardCanvas
+                    scenes={scenes}
+                    onReorder={reorderScenes}
+                    onDelete={deleteScene}
+                    activeSceneId={activeSceneId}
+                    onSetActiveScene={setActiveSceneId}
+                />
             </section>
         </div>
     </div>

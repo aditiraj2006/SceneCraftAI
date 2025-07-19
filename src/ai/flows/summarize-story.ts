@@ -1,3 +1,4 @@
+
 // src/ai/flows/summarize-story.ts
 'use server';
 
@@ -20,6 +21,7 @@ const SummarizeStoryInputSchema = z.object({
 export type SummarizeStoryInput = z.infer<typeof SummarizeStoryInputSchema>;
 
 const SummarizeStoryOutputSchema = z.object({
+  title: z.string().describe('A concise, catchy title for the story.'),
   summary: z.string().describe('A concise summary of the provided story idea.'),
   keyScenes: z.array(z.object({
     title: z.string().describe('A short, descriptive title for the key scene (e.g., "The Inciting Incident", "Confrontation").'),
@@ -38,8 +40,9 @@ const summarizeStoryPrompt = ai.definePrompt({
   input: {schema: SummarizeStoryInputSchema},
   output: {schema: SummarizeStoryOutputSchema},
   prompt: `You are a professional screenwriter and story analyst. Analyze the following story idea or script. Your task is to:
-1.  Write a concise summary of the entire story.
-2.  Identify and break down the story into 5-7 key scenes. For each key scene, provide a short, descriptive title, a one-sentence description, and a short (1-2 sentence) narration that could be used as a voiceover for that scene. These scenes should represent the major plot points (e.g., inciting incident, rising action, climax, resolution).
+1. Generate a concise, catchy title for the story.
+2.  Write a concise summary of the entire story.
+3.  Identify and break down the story into 5-7 key scenes. For each key scene, provide a short, descriptive title, a one-sentence description, and a short (1-2 sentence) narration that could be used as a voiceover for that scene. These scenes should represent the major plot points (e.g., inciting incident, rising action, climax, resolution).
 
 Story Idea:
 {{{storyIdea}}}

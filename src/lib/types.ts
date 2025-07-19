@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export interface Scene {
@@ -18,6 +19,7 @@ export interface KeyScene {
 }
 
 export interface Story {
+    title: string;
     summary: string;
     keyScenes: KeyScene[];
 }

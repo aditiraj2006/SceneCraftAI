@@ -6,12 +6,11 @@ import { Button } from '@/components/ui/button';
 
 type HeaderProps = {
   showExport?: boolean;
+  onExport?: () => void;
+  exportText?: string;
 }
 
-export function Header({ showExport = true }: HeaderProps) {
-  const handleExport = () => {
-    window.print();
-  };
+export function Header({ showExport = true, onExport, exportText = 'Finish & Export to PDF' }: HeaderProps) {
 
   return (
     <header className="no-print flex items-center justify-between p-4 border-b bg-card shadow-sm">
@@ -23,10 +22,10 @@ export function Header({ showExport = true }: HeaderProps) {
           SceneCraft AI
         </h1>
       </div>
-      {showExport && (
-        <Button onClick={handleExport} variant="default" className="bg-primary hover:bg-primary/90">
+      {showExport && onExport && (
+        <Button onClick={onExport} variant="default" className="bg-primary hover:bg-primary/90">
             <FileDown className="w-4 h-4 mr-2" />
-            Finish & Export to PDF
+            {exportText}
         </Button>
       )}
     </header>

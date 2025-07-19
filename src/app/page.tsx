@@ -7,8 +7,10 @@ import { InitialInputPage } from '@/components/initial-input-page';
 import { SummaryPage } from '@/components/summary-page';
 import { EditorPage } from '@/components/editor-page';
 import { Header } from '@/components/header';
+import { ExportPage } from '@/components/export-page';
 
-export type WorkflowStep = 'initial' | 'summary' | 'editor';
+
+export type WorkflowStep = 'initial' | 'summary' | 'editor' | 'export';
 
 export default function MultistepStoryboarder() {
   const [step, setStep] = useState<WorkflowStep>('initial');
@@ -43,6 +45,7 @@ export default function MultistepStoryboarder() {
             return {
                 ...existingScene,
                 description: ks.description,
+                narrationText: ks.narration,
             }
         }
         return {
@@ -58,6 +61,14 @@ export default function MultistepStoryboarder() {
     setScenes(finalScenes);
     goToStep('editor');
   };
+  
+  const handleUpdateScenes = (updatedScenes: Scene[]) => {
+    setScenes(updatedScenes);
+  }
+  
+  const handleUpdateStory = (updatedStory: Story) => {
+    setStory(updatedStory);
+  }
 
   const renderStep = () => {
     switch (step) {
@@ -66,17 +77,29 @@ export default function MultistepStoryboarder() {
       case 'summary':
         return <SummaryPage story={story!} onProceed={handleProceedToEditor} onBack={() => goToStep('initial')} />;
       case 'editor':
-        return <EditorPage initialScenes={scenes} onBack={() => goToStep('summary')} />;
+        return <EditorPage initialScenes={scenes} onScenesUpdate={handleUpdateScenes} onBack={() => goToStep('summary')} />;
+      case 'export':
+        return <ExportPage story={story!} scenes={scenes} onStoryUpdate={handleUpdateStory} onBack={() => goToStep('editor')} />
       default:
         return <InitialInputPage onSummaryGenerated={handleSummaryGenerated} />;
     }
   };
 
+  const showExport = step === 'editor' || step === 'export';
+  const exportAction = step === 'editor' ? () => goToStep('export') : () => window.print();
+  const exportText = step === 'editor' ? 'Finish & Export' : 'Export to PDF';
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
-      <Header showExport={step === 'editor'} />
+      <Header 
+        showExport={showExport} 
+        onExport={exportAction} 
+        exportText={exportText}
+      />
       <main className="flex-1 overflow-hidden">
-        {renderStep()}
+        <div id="storyboard-print-area" className="h-full">
+         {renderStep()}
+        </div>
       </main>
     </div>
   );
