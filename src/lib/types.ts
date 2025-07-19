@@ -47,6 +47,14 @@ export const languageOptions = z.object({
 }).parse({
   options: [
     { label: 'English (US)', value: 'en-US' },
+    { label: 'Hindi (India)', value: 'hi-IN' },
+    { label: 'Bengali (India)', value: 'bn-IN' },
+    { label: 'Gujarati (India)', value: 'gu-IN' },
+    { label: 'Kannada (India)', value: 'kn-IN' },
+    { label: 'Malayalam (India)', value: 'ml-IN' },
+    { label: 'Marathi (India)', value: 'mr-IN' },
+    { label: 'Tamil (India)', value: 'ta-IN' },
+    { label: 'Telugu (India)', value: 'te-IN' },
     { label: 'Spanish (Spain)', value: 'es-ES' },
     { label: 'French (France)', value: 'fr-FR' },
     { label: 'German', value: 'de-DE' },

@@ -5,12 +5,13 @@ import { useTransition } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { summarizeStory } from '@/ai/flows/summarize-story';
+import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import type { Story } from '@/lib/types';
 
 const formSchema = z.object({
@@ -25,6 +26,7 @@ type InitialInputPageProps = {
 
 export function InitialInputPage({ onSummaryGenerated }: InitialInputPageProps) {
   const [isGenerating, startGenerationTransition] = useTransition();
+  const [isEnhancing, startEnhancingTransition] = useTransition();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,6 +51,34 @@ export function InitialInputPage({ onSummaryGenerated }: InitialInputPageProps) 
       }
     });
   };
+
+  const handleEnhance = async () => {
+    const currentStoryIdea = form.getValues('storyIdea');
+    if (!currentStoryIdea) {
+      form.setError("storyIdea", { type: "manual", message: "Please enter a story idea to enhance." });
+      return;
+    }
+
+    startEnhancingTransition(async () => {
+      try {
+        const result = await enhancePrompt({ basicDescription: currentStoryIdea });
+        form.setValue('storyIdea', result.enhancedDescription, { shouldValidate: true });
+        toast({
+          title: 'Story Idea Enhanced',
+          description: 'Your story idea has been enriched with more detail.',
+        });
+      } catch (error) {
+        console.error('Error enhancing story idea:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Enhancement Failed',
+          description: 'Could not enhance the story idea. Please try again.',
+        });
+      }
+    });
+  };
+
+  const isLoading = isGenerating || isEnhancing;
 
   return (
     <div className="container mx-auto max-w-3xl h-full flex flex-col items-center justify-center p-4">
@@ -78,14 +108,29 @@ export function InitialInputPage({ onSummaryGenerated }: InitialInputPageProps) 
               </FormItem>
             )}
           />
-          <Button type="submit" size="lg" className="w-full" disabled={isGenerating}>
-            {isGenerating ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-5 w-5" />
-            )}
-            Generate Storyboard
-          </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleEnhance}
+              disabled={isLoading}
+            >
+              {isEnhancing ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Wand2 className="mr-2 h-5 w-5" />
+              )}
+              Enhance with AI
+            </Button>
+            <Button type="submit" size="lg" disabled={isLoading}>
+              {isGenerating ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-5 w-5" />
+              )}
+              Generate Storyboard
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

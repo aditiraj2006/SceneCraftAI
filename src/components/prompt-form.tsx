@@ -67,27 +67,27 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
     return () => subscription.unsubscribe();
   }, [form, onSceneUpdate, scene.id]);
 
-  const handleEnhance = async () => {
-    const currentPrompt = form.getValues('visualPrompt');
-    if (!currentPrompt) {
-        form.setError("visualPrompt", { type: "manual", message: "Please enter a prompt to enhance." });
+  const handleEnhance = async (field: 'visualPrompt' | 'narration') => {
+    const currentValue = form.getValues(field);
+    if (!currentValue) {
+        form.setError(field, { type: "manual", message: "Please enter text to enhance." });
         return;
     }
     
     startEnhancingTransition(async () => {
       try {
-        const result = await enhancePrompt({ basicDescription: currentPrompt });
-        form.setValue('visualPrompt', result.enhancedDescription, { shouldValidate: true });
+        const result = await enhancePrompt({ basicDescription: currentValue });
+        form.setValue(field, result.enhancedDescription, { shouldValidate: true });
         toast({
           title: 'Prompt Enhanced',
-          description: 'Your prompt has been enriched with cinematic details.',
+          description: `Your ${field === 'narration' ? 'narration' : 'visual prompt'} has been enriched.`,
         });
       } catch (error) {
-        console.error('Error enhancing prompt:', error);
+        console.error(`Error enhancing ${field}:`, error);
         toast({
           variant: 'destructive',
           title: 'Enhancement Failed',
-          description: 'Could not enhance the prompt. Please try again.',
+          description: `Could not enhance the ${field}. Please try again.`,
         });
       }
     });
@@ -180,7 +180,23 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
         />
 
         <Card>
-            <CardHeader><CardTitle className="text-xl">Scene Narration</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xl">Scene Narration</CardTitle>
+                <Button 
+                    type="button" 
+                    onClick={() => handleEnhance('narration')} 
+                    variant="outline" 
+                    size="sm"
+                    disabled={isLoading}
+                >
+                    {isEnhancing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    Enhance
+                </Button>
+            </CardHeader>
             <CardContent>
                 <FormField
                     control={form.control}
@@ -252,7 +268,9 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
         </Card>
 
         <Card className="flex-1 flex flex-col">
-            <CardHeader><CardTitle className="text-xl">Scene Visual</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-xl">Scene Visual</CardTitle>
+            </CardHeader>
             <CardContent className="flex-1 flex flex-col space-y-4">
                  <FormField
                     control={form.control}
@@ -274,7 +292,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                 <div className="flex flex-col gap-2">
                     <Button 
                         type="button" 
-                        onClick={handleEnhance} 
+                        onClick={() => handleEnhance('visualPrompt')} 
                         variant="outline" 
                         className="w-full" 
                         disabled={isLoading}
