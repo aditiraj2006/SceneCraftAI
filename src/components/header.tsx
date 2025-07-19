@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Film, FileDown } from 'lucide-react';
@@ -20,7 +21,7 @@ export function Header() {
       </div>
       <Button onClick={handleExport} variant="default" className="bg-primary hover:bg-primary/90">
         <FileDown className="w-4 h-4 mr-2" />
-        Export to PDF
+        Finish & Export to PDF
       </Button>
     </header>
   );

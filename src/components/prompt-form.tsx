@@ -1,30 +1,37 @@
+
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Wand2, Sparkles, Loader2 } from 'lucide-react';
+import { Wand2, Sparkles, Loader2, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
 import type { Scene } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 const formSchema = z.object({
-  prompt: z.string().min(10, {
+  title: z.string().min(1, 'Title is required.'),
+  visualPrompt: z.string().min(10, {
     message: 'Prompt must be at least 10 characters.',
   }),
+  narration: z.string(),
 });
 
 type PromptFormProps = {
-  onSceneAdd: (scene: Omit<Scene, 'id'>) => void;
+  scene: Scene;
+  onSceneUpdate: (sceneId: string, updatedProps: Partial<Scene>) => void;
+  onSceneAdd: (newSceneData: Omit<Scene, 'id' | 'title' | 'description'>, fromSceneId: string) => void;
 };
 
-export function PromptForm({ onSceneAdd }: PromptFormProps) {
+export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps) {
   const [isGenerating, startGenerationTransition] = useTransition();
   const [isEnhancing, startEnhancingTransition] = useTransition();
   const { toast } = useToast();
@@ -32,21 +39,39 @@ export function PromptForm({ onSceneAdd }: PromptFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: '',
+      title: scene.title,
+      visualPrompt: scene.aiPromptUsed || scene.description,
+      narration: scene.narrationText,
     },
   });
+  
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if(name === 'narration' && value.narration) {
+        onSceneUpdate(scene.id, { narrationText: value.narration });
+      }
+      if(name === 'title' && value.title) {
+        onSceneUpdate(scene.id, { title: value.title });
+      }
+      if(name === 'visualPrompt' && value.visualPrompt) {
+        onSceneUpdate(scene.id, { aiPromptUsed: value.visualPrompt });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, scene.id, onSceneUpdate]);
 
   const handleEnhance = async () => {
-    const currentPrompt = form.getValues('prompt');
+    const currentPrompt = form.getValues('visualPrompt');
     if (!currentPrompt) {
-        form.setError("prompt", { type: "manual", message: "Please enter a prompt to enhance." });
+        form.setError("visualPrompt", { type: "manual", message: "Please enter a prompt to enhance." });
         return;
     }
     
     startEnhancingTransition(async () => {
       try {
         const result = await enhancePrompt({ basicDescription: currentPrompt });
-        form.setValue('prompt', result.enhancedDescription, { shouldValidate: true });
+        form.setValue('visualPrompt', result.enhancedDescription, { shouldValidate: true });
+        onSceneUpdate(scene.id, { aiPromptUsed: result.enhancedDescription });
         toast({
           title: 'Prompt Enhanced',
           description: 'Your prompt has been enriched with cinematic details.',
@@ -62,16 +87,14 @@ export function PromptForm({ onSceneAdd }: PromptFormProps) {
     });
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onGenerate(values: z.infer<typeof formSchema>) {
     startGenerationTransition(async () => {
       try {
-        const result = await generateScene({ prompt: values.prompt });
-        onSceneAdd({
+        const result = await generateScene({ prompt: values.visualPrompt });
+        onSceneUpdate(scene.id, {
           imageUrl: result.imageUrl,
-          narrationText: 'Add narration or dialogue...',
-          aiPromptUsed: values.prompt,
+          aiPromptUsed: values.visualPrompt,
         });
-        form.reset({ prompt: '' });
       } catch (error) {
         console.error('Error generating scene:', error);
         toast({
@@ -82,64 +105,114 @@ export function PromptForm({ onSceneAdd }: PromptFormProps) {
       }
     });
   }
+  
+  const handleAddNewScene = () => {
+      onSceneAdd({
+          narrationText: 'Add narration or dialogue...',
+          aiPromptUsed: 'A new scene prompt...',
+          imageUrl: ''
+      }, scene.id);
+  }
 
   const isLoading = isEnhancing || isGenerating;
 
   return (
-    <div className="flex flex-col h-full">
-        <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 flex flex-col flex-1">
-            <FormField
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onGenerate)} className="space-y-6 flex flex-col h-full">
+        
+        <FormField
             control={form.control}
-            name="prompt"
+            name="title"
             render={({ field }) => (
-                <FormItem className="flex-1 flex flex-col">
-                <FormLabel>Scene Prompt</FormLabel>
+                <FormItem>
+                <FormLabel>Scene Title</FormLabel>
                 <FormControl>
-                    <Textarea
-                    placeholder="e.g., A panoramic view of a futuristic city at sunset, with flying vehicles."
-                    className="resize-y flex-1"
-                    {...field}
-                    />
+                    <Input placeholder="e.g., The Escape" {...field} />
                 </FormControl>
-                <FormDescription>
-                    Describe the scene you want to visualize.
-                </FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
-            />
-            <div className="flex flex-col gap-2 mt-auto">
-                <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                    size="lg"
-                >
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Sparkles className="mr-2 h-4 w-4" />
+        />
+
+        <Card>
+            <CardHeader><CardTitle>Narration</CardTitle></CardHeader>
+            <CardContent>
+                <FormField
+                    control={form.control}
+                    name="narration"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="sr-only">Narration</FormLabel>
+                        <FormControl>
+                            <Textarea
+                            placeholder="Your narration or dialogue for this scene..."
+                            className="resize-y min-h-[120px]"
+                            {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                    Generate Scene
-                </Button>
-                <Button 
-                    type="button" 
-                    onClick={handleEnhance} 
-                    variant="outline" 
-                    className="w-full" 
-                    disabled={isLoading}
-                >
-                    {isEnhancing ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Wand2 className="mr-2 h-4 w-4" />
+                />
+            </CardContent>
+        </Card>
+
+        <Card className="flex-1 flex flex-col">
+            <CardHeader><CardTitle>Visuals</CardTitle></CardHeader>
+            <CardContent className="flex-1 flex flex-col space-y-4">
+                 <FormField
+                    control={form.control}
+                    name="visualPrompt"
+                    render={({ field }) => (
+                        <FormItem className="flex-1 flex flex-col">
+                        <FormLabel>Visual Prompt</FormLabel>
+                        <FormControl>
+                            <Textarea
+                            placeholder="e.g., A panoramic view of a futuristic city at sunset..."
+                            className="resize-y flex-1"
+                            {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                    Enhance with AI
-                </Button>
-            </div>
-        </form>
-        </Form>
-    </div>
+                />
+                <div className="flex flex-col gap-2">
+                    <Button 
+                        type="button" 
+                        onClick={handleEnhance} 
+                        variant="outline" 
+                        className="w-full" 
+                        disabled={isLoading}
+                    >
+                        {isEnhancing ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Wand2 className="mr-2 h-4 w-4" />
+                        )}
+                        Enhance with AI
+                    </Button>
+                    <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isLoading}
+                        size="lg"
+                    >
+                        {isGenerating ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        {scene.imageUrl ? 'Regenerate Visual' : 'Generate Visual'}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Button type="button" variant="secondary" onClick={handleAddNewScene}>
+            <Plus className="mr-2 h-4 w-4" /> Add New Scene After This
+        </Button>
+      </form>
+    </Form>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRef, useState } from 'react';
@@ -11,9 +12,11 @@ type StoryboardCanvasProps = {
   onReorder: (scenes: Scene[]) => void;
   onDelete: (id: string) => void;
   onUpdateNarration: (id: string, text: string) => void;
+  activeSceneId: string | null;
+  onSetActiveScene: (id: string) => void;
 };
 
-export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanvasProps) {
+export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActiveScene, ...props }: StoryboardCanvasProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const scenesRef = useRef(scenes);
@@ -21,7 +24,6 @@ export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanv
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     setDraggedIndex(index);
-    // Improves drag-and-drop experience on Firefox
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -50,12 +52,8 @@ export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanv
         </div>
         <h2 className="text-2xl font-semibold text-foreground">Your Storyboard is Empty</h2>
         <p className="text-muted-foreground mt-2 max-w-sm">
-          Use the form on the left to describe your first scene. Let your creativity flow and see your story come to life!
+          Once you have defined your key scenes, they will appear here. You can then generate visuals and add narration for each one.
         </p>
-        <Button className="mt-6" size="lg">
-            <Sparkles className="mr-2"/>
-            Generate Your First Scene
-        </Button>
       </div>
     );
   }
@@ -63,7 +61,11 @@ export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanv
   return (
     <div id="storyboard-print-area" className="flex flex-col gap-4">
       {scenes.map((scene, index) => (
-         <div key={scene.id}>
+         <div 
+            key={scene.id} 
+            onClick={() => onSetActiveScene(scene.id)}
+            className="cursor-pointer"
+        >
          {dragOverIndex === index && draggedIndex !== null && (
             <div className="h-2 bg-primary/50 rounded-full my-2 animate-pulse" />
           )}
@@ -74,6 +76,7 @@ export function StoryboardCanvas({ scenes, onReorder, ...props }: StoryboardCanv
           onDragEnter={handleDragEnter}
           onDragEnd={handleDragEnd}
           isDragging={draggedIndex === index}
+          isActive={activeSceneId === scene.id}
           {...props}
         />
         </div>

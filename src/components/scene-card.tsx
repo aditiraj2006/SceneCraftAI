@@ -1,11 +1,12 @@
+
 'use client';
 
 import Image from 'next/image';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2, Image as ImageIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Scene } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 type SceneCardProps = {
   scene: Scene;
@@ -16,6 +17,7 @@ type SceneCardProps = {
   onDragEnter: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
   onDragEnd: () => void;
   isDragging?: boolean;
+  isActive?: boolean;
 };
 
 export function SceneCard({
@@ -26,8 +28,15 @@ export function SceneCard({
   onDragStart,
   onDragEnter,
   onDragEnd,
-  isDragging
+  isDragging,
+  isActive,
 }: SceneCardProps) {
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from firing
+    onDelete(scene.id);
+  }
+  
   return (
     <div
       draggable
@@ -37,28 +46,36 @@ export function SceneCard({
       onDragOver={(e) => e.preventDefault()}
       className={`transition-opacity ${isDragging ? 'opacity-50' : 'opacity-100'}`}
     >
-      <Card className="overflow-hidden w-full transition-shadow hover:shadow-lg">
+      <Card className={cn(
+          "overflow-hidden w-full transition-all duration-300 hover:shadow-lg",
+          isActive ? "ring-2 ring-primary shadow-lg" : "ring-0"
+        )}>
         <CardContent className="p-0 flex flex-col sm:flex-row">
-          <div className="relative w-full sm:w-1/3 aspect-video sm:aspect-auto">
-            <Image
-              src={scene.imageUrl}
-              alt={scene.aiPromptUsed}
-              width={300}
-              height={169}
-              data-ai-hint={scene.dataAiHint}
-              className="object-cover w-full h-full"
-            />
+          <div className="relative w-full sm:w-1/3 aspect-video sm:aspect-auto bg-muted/50">
+            {scene.imageUrl ? (
+                <Image
+                    src={scene.imageUrl}
+                    alt={scene.aiPromptUsed}
+                    width={300}
+                    height={169}
+                    data-ai-hint={scene.dataAiHint}
+                    className="object-cover w-full h-full"
+                />
+            ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <ImageIcon className="w-10 h-10 mb-2"/>
+                    <p className="text-sm">No Visual Generated</p>
+                </div>
+            )}
              <div className="absolute top-2 left-2 p-1 bg-black/50 rounded-full text-white text-sm font-bold w-8 h-8 flex items-center justify-center">
               {index + 1}
             </div>
           </div>
           <div className="p-4 flex-1 flex flex-col justify-between gap-4">
-            <Textarea
-              value={scene.narrationText}
-              onChange={(e) => onUpdateNarration(scene.id, e.target.value)}
-              placeholder="Narration, dialogue, or notes..."
-              className="w-full flex-1 text-base resize-none border-0 focus-visible:ring-1"
-            />
+            <h3 className="font-bold text-lg">{scene.title}</h3>
+            <p className="text-sm text-muted-foreground flex-1">
+              {scene.narrationText}
+            </p>
             <div className="flex justify-between items-center">
                 <div 
                     className="cursor-grab text-muted-foreground hover:text-foreground touch-none"
@@ -69,7 +86,7 @@ export function SceneCard({
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onDelete(scene.id)}
+                    onClick={handleDelete}
                     className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     aria-label="Delete scene"
                 >
