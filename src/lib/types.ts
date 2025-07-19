@@ -36,3 +36,25 @@ export const voiceOptions = z.enum([
     'Vega',
 ]);
 export type VoiceOption = z.infer<typeof voiceOptions>;
+
+const languageOptionSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+});
+
+export const languageOptions = z.object({
+  options: z.array(languageOptionSchema),
+}).parse({
+  options: [
+    { label: 'English (US)', value: 'en-US' },
+    { label: 'Spanish (Spain)', value: 'es-ES' },
+    { label: 'French (France)', value: 'fr-FR' },
+    { label: 'German', value: 'de-DE' },
+    { label: 'Italian', value: 'it-IT' },
+    { label: 'Japanese', value: 'ja-JP' },
+    { label: 'Korean', value: 'ko-KR' },
+    { label: 'Portuguese (BR)', value: 'pt-BR' },
+  ],
+});
+
+export type LanguageOption = z.infer<typeof languageOptionSchema>['value'];

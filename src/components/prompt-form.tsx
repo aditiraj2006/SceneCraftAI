@@ -16,7 +16,7 @@ import { enhancePrompt } from '@/ai/flows/enhance-prompt';
 import { generateScene } from '@/ai/flows/generate-scene';
 import { generateVoiceover } from '@/ai/flows/generate-voiceover';
 import type { Scene, VoiceOption } from '@/lib/types';
-import { voiceOptions } from '@/lib/types';
+import { voiceOptions, languageOptions, type LanguageOption } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -39,6 +39,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
   const [isGeneratingVoiceover, startVoiceoverGenerationTransition] = useTransition();
   const [isEnhancing, startEnhancingTransition] = useTransition();
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Algenib');
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>('en-US');
 
   const { toast } = useToast();
 
@@ -123,7 +124,7 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
       }
       startVoiceoverGenerationTransition(async () => {
         try {
-            const result = await generateVoiceover({ text: narration, voice: selectedVoice });
+            const result = await generateVoiceover({ text: narration, voice: selectedVoice, languageCode: selectedLanguage });
             onSceneUpdate(scene.id, { voiceoverUrl: result.audioUrl });
             toast({
                 title: 'Voiceover Generated',
@@ -212,9 +213,19 @@ export function PromptForm({ scene, onSceneUpdate, onSceneAdd }: PromptFormProps
                         </Button>
                     </div>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                    <Select onValueChange={(v) => setSelectedLanguage(v as LanguageOption)} defaultValue={selectedLanguage}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {languageOptions.options.map(lang => (
+                                <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Select onValueChange={(v) => setSelectedVoice(v as VoiceOption)} defaultValue={selectedVoice}>
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger>
                             <SelectValue placeholder="Select a voice" />
                         </SelectTrigger>
                         <SelectContent>

@@ -19,6 +19,7 @@ import { voiceOptions, type VoiceOption } from '@/lib/types';
 const GenerateVoiceoverInputSchema = z.object({
   text: z.string().describe('The text to be converted to speech.'),
   voice: voiceOptions.describe('The voice to use for the speech synthesis.'),
+  languageCode: z.string().describe('The BCP-47 language code for the speech synthesis (e.g., "en-US", "es-ES").'),
 });
 export type GenerateVoiceoverInput = z.infer<typeof GenerateVoiceoverInputSchema>;
 
@@ -71,7 +72,7 @@ const generateVoiceoverFlow = ai.defineFlow(
     inputSchema: GenerateVoiceoverInputSchema,
     outputSchema: GenerateVoiceoverOutputSchema,
   },
-  async ({ text, voice }) => {
+  async ({ text, voice, languageCode }) => {
      const { media } = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
@@ -80,6 +81,7 @@ const generateVoiceoverFlow = ai.defineFlow(
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: voice },
           },
+          languageCode: languageCode,
         },
       },
       prompt: text,
