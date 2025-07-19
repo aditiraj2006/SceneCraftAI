@@ -68,25 +68,24 @@ body {
   }
 }
 
+.print-only {
+    display: none;
+}
+
 @media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .no-print {
     display: none !important;
   }
+  
   .print-only {
     display: block !important;
-  }
-  body, #storyboard-print-area {
-    background: white !important;
-    color: black !important;
-  }
-  
-  #storyboard-print-area {
-    padding: 0;
-    margin: 0;
-  }
-
-  .page-break {
-    page-break-after: always;
   }
   
   @page {
@@ -94,10 +93,7 @@ body {
     margin: 1cm;
   }
 
-  .scene-card-print {
-    border: 1px solid #ccc;
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
+  .page-break-before {
+    page-break-before: always;
   }
 }

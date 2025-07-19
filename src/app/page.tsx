@@ -77,7 +77,7 @@ export default function MultistepStoryboarder() {
       case 'summary':
         return <SummaryPage story={story!} onProceed={handleProceedToEditor} onBack={() => goToStep('initial')} />;
       case 'editor':
-        return <EditorPage initialScenes={scenes} onScenesUpdate={handleUpdateScenes} onBack={() => goToStep('summary')} />;
+        return <EditorPage initialScenes={scenes} story={story!} onScenesUpdate={handleUpdateScenes} onBack={() => goToStep('summary')} />;
       case 'export':
         return <ExportPage story={story!} scenes={scenes} onStoryUpdate={handleUpdateStory} onBack={() => goToStep('editor')} />
       default:
@@ -87,7 +87,7 @@ export default function MultistepStoryboarder() {
 
   const showExport = step === 'editor' || step === 'export';
   const exportAction = step === 'editor' ? () => goToStep('export') : () => window.print();
-  const exportText = step === 'editor' ? 'Finish & Export' : 'Export to PDF';
+  const exportText = step === 'editor' ? 'Finish & Export' : 'Generate PDF';
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
@@ -96,10 +96,8 @@ export default function MultistepStoryboarder() {
         onExport={exportAction} 
         exportText={exportText}
       />
-      <main className="flex-1 overflow-hidden">
-        <div id="storyboard-print-area" className="h-full">
-         {renderStep()}
-        </div>
+      <main className="flex-1 overflow-auto no-print">
+        {renderStep()}
       </main>
     </div>
   );
