@@ -66,6 +66,15 @@ const PrintableView = ({story, scenes}: {story: Story, scenes: Scene[]}) => {
     )
 }
 
+function downloadDataUri(dataUri: string, filename: string) {
+    const link = document.createElement('a');
+    link.href = dataUri;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageProps) {
     const { toast } = useToast();
     const [shareUrl, setShareUrl] = useState('');
@@ -81,7 +90,7 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
     }
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        // This is a placeholder as story doesn't have a description field yet
+        onStoryUpdate({...story, summary: e.target.value});
     }
 
     const handleCopyToClipboard = (text: string) => {
@@ -100,6 +109,40 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
             });
         });
     };
+    
+    const handleDownloadAllImages = () => {
+        const imageScenes = scenes.filter(s => s.imageUrl);
+        if (imageScenes.length === 0) {
+            toast({ title: "No Images to Download", description: "Generate some scene visuals first."});
+            return;
+        }
+        imageScenes.forEach((scene, index) => {
+            const filename = `scene_${index + 1}_${scene.title.replace(/\s+/g, '_')}.png`;
+            downloadDataUri(scene.imageUrl, filename);
+        });
+        toast({ title: "Image Download Started", description: `Downloading ${imageScenes.length} images.`});
+    };
+
+    const handleDownloadAllVoiceovers = () => {
+        const voiceoverScenes = scenes.filter(s => s.voiceoverUrl);
+         if (voiceoverScenes.length === 0) {
+            toast({ title: "No Voiceovers to Download", description: "Generate some voiceovers first."});
+            return;
+        }
+        voiceoverScenes.forEach((scene, index) => {
+            const filename = `scene_${index + 1}_${scene.title.replace(/\s+/g, '_')}.wav`;
+            downloadDataUri(scene.voiceoverUrl!, filename);
+        });
+        toast({ title: "Voiceover Download Started", description: `Downloading ${voiceoverScenes.length} voiceovers.`});
+    };
+    
+    const showComingSoonToast = (featureName: string) => {
+        toast({
+            title: "Coming Soon!",
+            description: `${featureName} is a planned feature and will be available in a future update.`,
+        });
+    };
+
 
   return (
     <>
@@ -163,8 +206,8 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                         <Input id="projectTitle" value={story.title} onChange={handleTitleChange} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="projectDescription">Project Description</Label>
-                        <Textarea id="projectDescription" placeholder="A brief overview of the project." />
+                        <Label htmlFor="projectSummary">Project Summary</Label>
+                        <Textarea id="projectSummary" value={story.summary} onChange={handleDescriptionChange} placeholder="A brief overview of the project." />
                     </div>
                     
                     <Separator />
@@ -173,10 +216,10 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                         <h4 className="font-medium">Collaboration</h4>
                         <div className="flex gap-2">
                             <Input placeholder="Invite by email..."/>
-                            <Button>Send Invite</Button>
+                            <Button onClick={() => showComingSoonToast('Email Invites')}>Send Invite</Button>
                         </div>
                          <div className="flex items-center space-x-2">
-                            <Switch id="public-sharing" />
+                            <Switch id="public-sharing" onCheckedChange={(checked) => showComingSoonToast('Public Sharing')} />
                             <Label htmlFor="public-sharing">Enable Public Link Sharing</Label>
                         </div>
                     </div>
@@ -185,7 +228,7 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
 
                     <div className="space-y-2">
                         <h4 className="font-medium">Version History</h4>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" onClick={() => showComingSoonToast('Version History')}>
                             <GitBranch className="mr-2 h-4 w-4" /> View Version History
                         </Button>
                     </div>
@@ -239,8 +282,8 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
 
                     <div className="space-y-4 p-4 border rounded-lg">
                         <h4 className="font-medium">Batch Export</h4>
-                        <Button variant="outline" className="w-full"><ImageIcon className="mr-2 h-4 w-4" /> Download All Images (.zip)</Button>
-                        <Button variant="outline" className="w-full"><Speaker className="mr-2 h-4 w-4" /> Download All Voiceovers (.zip)</Button>
+                        <Button variant="outline" className="w-full" onClick={handleDownloadAllImages}><ImageIcon className="mr-2 h-4 w-4" /> Download All Images</Button>
+                        <Button variant="outline" className="w-full" onClick={handleDownloadAllVoiceovers}><Speaker className="mr-2 h-4 w-4" /> Download All Voiceovers</Button>
                     </div>
                     
                      <div className="space-y-4 p-4 border rounded-lg">
