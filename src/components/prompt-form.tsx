@@ -121,13 +121,22 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
           imageUrl: result.imageUrl,
           aiPromptUsed: values.visualPrompt,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error generating scene:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Generation Failed',
-          description: 'Could not generate the scene. Please try again.',
-        });
+        if (error.message && (error.message.includes('429') || error.message.includes('quota'))) {
+            toast({
+                variant: 'destructive',
+                title: 'Quota Exceeded',
+                description: 'You have exceeded the daily limit for image generation. Please try again later or check your API plan.',
+                duration: 9000,
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Generation Failed',
+                description: 'Could not generate the scene. Please check the console for more details.',
+            });
+        }
       }
     });
   }
@@ -389,5 +398,7 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
     </Form>
   );
 }
+
+    
 
     
