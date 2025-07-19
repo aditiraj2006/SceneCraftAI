@@ -14,6 +14,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 type ExportPageProps = {
   story: Story;
@@ -22,46 +23,81 @@ type ExportPageProps = {
   onBack: () => void;
 };
 
+type PrintOptions = {
+    imagesPerPage: '1' | '2' | '4';
+    includeImages: boolean;
+    includeNarration: boolean;
+    includePrompts: boolean;
+    includeNumbers: boolean;
+}
 
-const PrintableView = ({story, scenes}: {story: Story, scenes: Scene[]}) => {
+const PrintableView = ({story, scenes, options}: {story: Story, scenes: Scene[], options: PrintOptions}) => {
+    
+    const sceneChunks: Scene[][] = [];
+    if (options.imagesPerPage === '1') {
+        scenes.forEach(scene => sceneChunks.push([scene]));
+    } else {
+        for (let i = 0; i < scenes.length; i += parseInt(options.imagesPerPage, 10)) {
+            sceneChunks.push(scenes.slice(i, i + parseInt(options.imagesPerPage, 10)));
+        }
+    }
+
     return (
         <div className="print-only">
-            <h1 className="text-3xl font-bold mb-2 text-center">{story.title}</h1>
-            <p className="text-lg mb-8 text-center">{story.summary}</p>
-            
-            <div className="space-y-8">
-                {scenes.map((scene, index) => (
-                    <div key={scene.id} className={index > 0 ? "page-break-before" : ""}>
-                        <Card className="border-2">
-                           <CardContent className="p-4">
-                             <div className="grid grid-cols-2 gap-8 items-center">
-                               <div className="space-y-4">
-                                  <h2 className="text-2xl font-bold">{index + 1}. {scene.title}</h2>
-                                  <div className="space-y-1">
-                                      <h3 className="font-semibold">Narration:</h3>
-                                      <p className="text-base">{scene.narrationText}</p>
-                                  </div>
-                                  <div className="space-y-1">
-                                      <h3 className="font-semibold">Visual Prompt:</h3>
-                                      <p className="text-sm italic text-gray-600">{scene.aiPromptUsed}</p>
-                                  </div>
-                               </div>
-                                <div className="aspect-video bg-gray-100 border rounded-lg flex items-center justify-center">
-                                   {scene.imageUrl ? (
-                                        <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-cover rounded-md"/>
-                                    ) : (
-                                        <div className="text-gray-500 flex flex-col items-center">
-                                           <ImageIcon className="w-16 h-16" />
-                                           <span>No Visual</span>
-                                        </div>
+            {/* Title Page */}
+            <div className="flex flex-col items-center justify-center h-screen">
+                 <h1 className="text-5xl font-bold mb-4 text-center">{story.title}</h1>
+                 <p className="text-xl mt-4 text-center max-w-3xl">{story.summary}</p>
+            </div>
+           
+            {/* Scenes */}
+            {sceneChunks.map((chunk, chunkIndex) => (
+                 <div key={chunkIndex} className="page-break-before">
+                    <div className={cn(
+                        "grid gap-8 items-start h-full",
+                        options.imagesPerPage === '1' && "grid-cols-1 grid-rows-1",
+                        options.imagesPerPage === '2' && "grid-cols-1 grid-rows-2",
+                        options.imagesPerPage === '4' && "grid-cols-2 grid-rows-2",
+                    )}>
+                        {chunk.map((scene) => {
+                            const sceneNumber = scenes.findIndex(s => s.id === scene.id) + 1;
+                            return (
+                                <div key={scene.id} className="flex flex-col h-full border-2 rounded-lg p-4">
+                                    <div className="flex-1 space-y-2">
+                                        {options.includeNumbers && <h2 className="text-2xl font-bold">{sceneNumber}. {scene.title}</h2>}
+                                        {!options.includeNumbers && <h2 className="text-2xl font-bold">{scene.title}</h2>}
+                                        
+                                        {options.includeNarration && (
+                                            <div className="space-y-1">
+                                                <h3 className="font-semibold">Narration:</h3>
+                                                <p className="text-base">{scene.narrationText}</p>
+                                            </div>
+                                        )}
+                                        {options.includePrompts && scene.aiPromptUsed && (
+                                            <div className="space-y-1">
+                                                <h3 className="font-semibold">Visual Prompt:</h3>
+                                                <p className="text-sm italic text-gray-600">{scene.aiPromptUsed}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {options.includeImages && (
+                                         <div className="mt-4 aspect-video bg-gray-100 border rounded-lg flex items-center justify-center">
+                                           {scene.imageUrl ? (
+                                                <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-contain rounded-md"/>
+                                            ) : (
+                                                <div className="text-gray-500 flex flex-col items-center">
+                                                   <ImageIcon className="w-16 h-16" />
+                                                   <span>No Visual</span>
+                                                </div>
+                                            )}
+                                       </div>
                                     )}
                                </div>
-                             </div>
-                           </CardContent>
-                        </Card>
+                            )
+                        })}
                     </div>
-                ))}
-            </div>
+                </div>
+            ))}
         </div>
     )
 }
@@ -78,6 +114,13 @@ function downloadDataUri(dataUri: string, filename: string) {
 export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageProps) {
     const { toast } = useToast();
     const [shareUrl, setShareUrl] = useState('');
+    const [printOptions, setPrintOptions] = useState<PrintOptions>({
+        imagesPerPage: '2',
+        includeImages: true,
+        includeNarration: true,
+        includePrompts: false,
+        includeNumbers: true,
+    });
 
     useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -246,7 +289,9 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                         <h4 className="font-medium">Export as PDF</h4>
                         <div className="space-y-2">
                             <Label>Layout Options</Label>
-                             <Select defaultValue="2">
+                             <Select 
+                                value={printOptions.imagesPerPage} 
+                                onValueChange={(v) => setPrintOptions(prev => ({...prev, imagesPerPage: v as '1'|'2'|'4'}))}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select layout" />
                                 </SelectTrigger>
@@ -259,19 +304,19 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="include-images" defaultChecked/>
+                                <Checkbox id="include-images" checked={printOptions.includeImages} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeImages: !!checked}))}/>
                                 <Label htmlFor="include-images">Scene Images</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="include-narration" defaultChecked/>
+                                <Checkbox id="include-narration" checked={printOptions.includeNarration} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeNarration: !!checked}))} />
                                 <Label htmlFor="include-narration">Narration Text</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="include-prompts" />
+                                <Checkbox id="include-prompts" checked={printOptions.includePrompts} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includePrompts: !!checked}))}/>
                                 <Label htmlFor="include-prompts">Visual Prompts</Label>
                             </div>
                              <div className="flex items-center space-x-2">
-                                <Checkbox id="include-numbers" defaultChecked/>
+                                <Checkbox id="include-numbers" checked={printOptions.includeNumbers} onCheckedChange={(checked) => setPrintOptions(prev => ({...prev, includeNumbers: !!checked}))} />
                                 <Label htmlFor="include-numbers">Scene Numbers</Label>
                             </div>
                         </div>
@@ -300,7 +345,9 @@ export function ExportPage({ story, scenes, onStoryUpdate, onBack }: ExportPageP
         </div>
       </div>
     </div>
-    <PrintableView story={story} scenes={scenes} />
+    <PrintableView story={story} scenes={scenes} options={printOptions} />
     </>
   );
 }
+
+    

@@ -96,4 +96,10 @@ body {
   .page-break-before {
     page-break-before: always;
   }
+  
+  html, body {
+      height: 99%;
+  }
 }
+
+    
