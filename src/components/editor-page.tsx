@@ -6,57 +6,13 @@ import type { Scene, Story } from '@/lib/types';
 import { PromptForm } from '@/components/prompt-form';
 import { StoryboardCanvas } from '@/components/storyboard-canvas';
 import { Button } from './ui/button';
-import { ArrowLeft, Image as ImageIcon } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
+import { ArrowLeft } from 'lucide-react';
 
 type EditorPageProps = {
     initialScenes: Scene[];
     story: Story;
     onScenesUpdate: (scenes: Scene[]) => void;
     onBack: () => void;
-}
-
-const PrintableView = ({story, scenes}: {story: Story, scenes: Scene[]}) => {
-    return (
-        <div className="print-only">
-            <h1 className="text-3xl font-bold mb-2 text-center">{story.title}</h1>
-            <p className="text-lg mb-8 text-center">{story.summary}</p>
-            
-            <div className="space-y-8">
-                {scenes.map((scene, index) => (
-                    <div key={scene.id} className={index > 0 ? "page-break-before" : ""}>
-                        <Card className="border-2">
-                           <CardContent className="p-4">
-                             <div className="grid grid-cols-2 gap-8 items-center">
-                               <div className="space-y-4">
-                                  <h2 className="text-2xl font-bold">{index + 1}. {scene.title}</h2>
-                                  <div className="space-y-1">
-                                      <h3 className="font-semibold">Narration:</h3>
-                                      <p className="text-base">{scene.narrationText}</p>
-                                  </div>
-                                  <div className="space-y-1">
-                                      <h3 className="font-semibold">Visual Prompt:</h3>
-                                      <p className="text-sm italic text-gray-600">{scene.aiPromptUsed}</p>
-                                  </div>
-                               </div>
-                                <div className="aspect-video bg-gray-100 border rounded-lg flex items-center justify-center">
-                                   {scene.imageUrl ? (
-                                        <img src={scene.imageUrl} alt={scene.title} className="w-full h-full object-cover rounded-md"/>
-                                    ) : (
-                                        <div className="text-gray-500 flex flex-col items-center">
-                                           <ImageIcon className="w-16 h-16" />
-                                           <span>No Visual</span>
-                                        </div>
-                                    )}
-                               </div>
-                             </div>
-                           </CardContent>
-                        </Card>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )
 }
 
 export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: EditorPageProps) {
@@ -123,7 +79,6 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
   const activeScene = scenes.find(s => s.id === activeSceneId) || null;
 
   return (
-    <>
     <div className="flex flex-col h-full no-print">
         <div className="p-4 border-b">
             <Button variant="outline" onClick={onBack}>
@@ -160,7 +115,5 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
             </section>
         </div>
     </div>
-    <PrintableView story={story} scenes={scenes} />
-    </>
   );
 }
