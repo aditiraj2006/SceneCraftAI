@@ -9,6 +9,7 @@ import { EditorPage } from '@/components/editor-page';
 import { Header } from '@/components/header';
 import { ExportPage } from '@/components/export-page';
 import { TrailerPage } from '@/components/trailer-page';
+import { PrintableView } from '@/components/printable-view';
 
 
 export type WorkflowStep = 'initial' | 'summary' | 'editor' | 'export' | 'trailer';
@@ -104,7 +105,7 @@ export default function MultistepStoryboarder() {
       <main className="flex-1 overflow-auto no-print">
         {renderStep()}
       </main>
-      {isExportPage && <PrintableView story={story!} scenes={scenes} />}
+      {isExportPage && story && <PrintableView story={story} scenes={scenes} />}
     </div>
   );
 }

@@ -25,7 +25,8 @@ export function PrintableView({ story, scenes }: PrintableViewProps) {
           <div
             key={scene.id}
             className={cn(
-              "flex flex-col border border-gray-300 rounded-lg overflow-hidden h-[calc(50vh-2cm)] page-break-before"
+              "flex flex-col border border-gray-300 rounded-lg overflow-hidden h-[calc(50vh-2cm)]",
+              index % 4 === 0 ? "page-break-before" : ""
             )}
           >
             <div className="flex-1 bg-gray-100 flex items-center justify-center relative">
