@@ -7,8 +7,9 @@
  * - GenerateSceneOutput - The return type for the generateScene function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/googleai';
+import { z } from 'genkit';
 
 const GenerateSceneInputSchema = z.object({
   prompt: z.string().describe('The prompt describing the scene to generate.'),
@@ -53,13 +54,49 @@ const generateSceneFlow = ai.defineFlow(
         generationPrompt.push('\nEnsure the characters and style are consistent with the provided reference image.');
     }
     
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: generationPrompt.join(''),
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
-    return {imageUrl: media.url!};
+    const placeholderSvgDataUri = (text = 'No Image') =>
+      `data:image/svg+xml;utf8,${encodeURIComponent(`
+        <svg xmlns='http://www.w3.org/2000/svg' width='1024' height='576' viewBox='0 0 1024 576'>
+          <rect width='100%' height='100%' fill='#111827' />
+          <text x='50%' y='50%' fill='#9CA3AF' font-family='Arial, Helvetica, sans-serif' font-size='28' text-anchor='middle' dy='.3em'>${text}</text>
+        </svg>
+      `)}`;
+
+    try {
+      const resp = await ai.generate({
+        model: googleAI.model('gemini-2.5-flash-image'),
+        prompt: generationPrompt as any,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+
+      const media = (resp as any).media ?? (resp as any).output?.media;
+      let imageUrl: string | undefined;
+      if (Array.isArray(media)) {
+        imageUrl = media[0]?.url;
+      } else if (media && typeof media === 'object') {
+        imageUrl = media.url;
+      }
+
+      if (!imageUrl) {
+        console.error('Image generation returned no media URL', { resp });
+        return { imageUrl: placeholderSvgDataUri('No Image Returned') };
+      }
+
+      return { imageUrl };
+    } catch (e: any) {
+      console.error('Image generation failed:', e);
+
+      const msg = (e && (e.message || e.toString())) || '';
+      if (msg.includes('quota') || msg.includes('Quota') || msg.includes('429') || msg.includes('billing')) {
+        return { imageUrl: placeholderSvgDataUri('Quota Exceeded') };
+      }
+      if (msg.includes('401') || msg.includes('403') || msg.includes('Not Found')) {
+        return { imageUrl: placeholderSvgDataUri('Auth/Model Error') };
+      }
+
+      throw e;
+    }
   }
 );

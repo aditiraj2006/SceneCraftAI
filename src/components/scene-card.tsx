@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -9,39 +8,51 @@ import { Scene } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 
-type SceneCardProps = {
+interface SceneCardProps {
   scene: Scene;
   index: number;
-  onDelete: (id: string) => void;
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
-  onDragEnter: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
-  onDragEnd: () => void;
+  onGenerateImage: () => Promise<void>;
+  onEnhancePrompt: () => Promise<void>;
+  onUpdateScene: (updates: Partial<Scene>) => void;
+  isGenerating: boolean;
+  isEnhancing: boolean;
+  onDelete?: (sceneId: string) => void;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onDragEnter?: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
   isDragging?: boolean;
   isActive?: boolean;
-};
+}
 
 export function SceneCard({
   scene,
   index,
+  onGenerateImage,
+  onEnhancePrompt,
+  onUpdateScene,
+  isGenerating,
+  isEnhancing,
   onDelete,
   onDragStart,
   onDragEnter,
   onDragEnd,
-  isDragging,
-  isActive,
+  isDragging = false,
+  isActive = false,
 }: SceneCardProps) {
 
   const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click from firing
-    onDelete(scene.id);
-  }
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(scene.id);
+    }
+  };
   
   return (
     <div
       draggable
-      onDragStart={(e) => onDragStart(e, index)}
-      onDragEnter={(e) => onDragEnter(e, index)}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => onDragStart?.(e, index)}
+      onDragEnter={(e) => onDragEnter?.(e, index)}
+      onDragEnd={(e) => onDragEnd?.(e)}
       onDragOver={(e) => e.preventDefault()}
       className={`transition-opacity ${isDragging ? 'opacity-50' : 'opacity-100'}`}
     >
@@ -57,9 +68,8 @@ export function SceneCard({
                     alt={scene.aiPromptUsed || 'Generated scene image'}
                     width={300}
                     height={169}
-                    data-ai-hint={scene.dataAiHint}
                     className="object-cover w-full h-full"
-                    priority={index < 3} // Eager load the first few images
+                    priority={index < 3}
                 />
             ) : (
                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4">
@@ -72,16 +82,39 @@ export function SceneCard({
             </div>
           </div>
           <div className="p-4 flex-1 flex flex-col justify-between gap-4">
-            <h3 className="font-bold text-lg">{scene.title}</h3>
+            <div>
+              <h3 className="font-bold text-lg">{scene.title}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{scene.description}</p>
+            </div>
             <p className="text-sm text-muted-foreground flex-1 line-clamp-3">
               {scene.narrationText}
             </p>
-            <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onGenerateImage}
+                  disabled={isGenerating}
+                  className="text-xs"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Image'}
+              </Button>
+              <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onEnhancePrompt}
+                  disabled={isEnhancing}
+                  className="text-xs"
+              >
+                {isEnhancing ? 'Enhancing...' : 'Enhance'}
+              </Button>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t">
                 <div 
                     className="cursor-grab text-muted-foreground hover:text-foreground touch-none"
                     title="Drag to reorder"
                 >
-                    <GripVertical />
+                    <GripVertical className="h-4 w-4" />
                 </div>
                 <Button
                     variant="ghost"
@@ -113,7 +146,11 @@ export function SceneCardSkeleton() {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t">
             <Skeleton className="h-6 w-6" />
             <Skeleton className="h-8 w-8" />
           </div>

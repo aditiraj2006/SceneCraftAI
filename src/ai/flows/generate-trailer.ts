@@ -1,24 +1,14 @@
-
 'use server';
 
-/**
- * @fileOverview Trailer generation AI agent.
- *
- * - generateTrailer - A function that handles the trailer generation process.
- * - GenerateTrailerInput - The input type for the generateTrailer function.
- * - GenerateTrailerOutput - The return type for the generateTrailer function.
- */
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
 import { Scene, TrailerConfig } from '@/lib/types';
 
-
 const GenerateTrailerInputSchema = z.object({
   scenes: z.array(z.any()).describe('An array of scene objects, including image URLs and narration.'),
   config: z.any().describe('The configuration for the trailer generation.'),
 });
-
 export type GenerateTrailerInput = z.infer<typeof GenerateTrailerInputSchema>;
 
 const GenerateTrailerOutputSchema = z.object({
@@ -30,24 +20,22 @@ export async function generateTrailer(input: GenerateTrailerInput): Promise<Gene
   return generateTrailerFlow(input);
 }
 
-// Helper function to fetch and convert an image to a data URI
 async function imageUrlToDataUri(url: string): Promise<string> {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            console.warn(`Failed to fetch image ${url}. Status: ${response.status}`);
-            return url; // return original if fetch fails
-        }
-        const contentType = response.headers.get('content-type') || 'image/png';
-        const buffer = await response.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        return `data:${contentType};base64,${base64}`;
-    } catch (error) {
-        console.warn(`Error fetching image ${url}:`, error);
-        return url; // return original on error
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.warn(`Failed to fetch image ${url}. Status: ${response.status}`);
+      return url;
     }
+    const contentType = response.headers.get('content-type') || 'image/png';
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.warn(`Error fetching image ${url}:`, error);
+    return url;
+  }
 }
-
 
 const generateTrailerFlow = ai.defineFlow(
   {
@@ -56,80 +44,58 @@ const generateTrailerFlow = ai.defineFlow(
     outputSchema: GenerateTrailerOutputSchema,
   },
   async ({ scenes, config }) => {
-    
-    const imageScenes = scenes.filter(s => s.imageUrl);
+    const imageScenes = scenes.filter((s: any) => s.imageUrl);
 
     if (imageScenes.length === 0) {
-        throw new Error("Cannot generate a trailer without at least one scene with a visual.");
+      throw new Error("Cannot generate a trailer without at least one scene with a visual.");
     }
-    
-    const promptText = `
-      Create a cinematic trailer video with a duration of ${config.length} seconds.
-      The overall tone should be ${config.tone}.
-      Use the following scenes in sequence. 
-      Generate appropriate transitions between scenes to match the tone.
-      ${config.includeMusic ? `Incorporate ${config.musicGenre.toLowerCase()} background music.` : ''}
-      ${config.includeTextOverlays ? 'Include text overlays for scene titles or key narration moments.' : ''}
 
-      Scenes:
-      ${imageScenes.map((s, i) => `Scene ${i+1}: ${s.description}`).join('\n')}
-    `;
-
-    const promptMedia = await Promise.all(
-        imageScenes.map(async (s) => ({
-            media: { url: await imageUrlToDataUri(s.imageUrl) }
-        }))
-    );
-    
-    let operation;
     try {
-        const genAIGeneration = await ai.generate({
-          model: googleAI.model('veo-2.0-generate-001'),
-          prompt: [
-            { text: promptText },
-            ...promptMedia,
-          ],
-          config: {
-            durationSeconds: parseInt(config.length, 10),
-            aspectRatio: '16:9',
-          },
+      const imageDataUris = await Promise.all(
+        imageScenes.map((s: any) => imageUrlToDataUri(s.imageUrl))
+      );
+
+      const prompt = `Create a cinematic trailer video with a duration of ${config.length} seconds.
+          The overall tone should be ${config.tone}.
+          Use the following scenes in sequence.
+          Generate appropriate transitions between scenes to match the tone.
+          ${config.includeMusic ? `Incorporate ${config.musicGenre.toLowerCase()} background music.` : ''}
+          ${config.includeTextOverlays ? 'Include text overlays for scene titles or key narration moments.' : ''}`;
+
+      const generationPrompt: any[] = [prompt];
+      imageDataUris.forEach(dataUri => {
+        generationPrompt.push({
+          media: { 
+            url: dataUri, 
+            contentType: 'image/jpeg' 
+          }
         });
-        operation = genAIGeneration.operation;
+      });
 
-    } catch (e: any) {
-        // Intercept billing-related errors early
-        if (e.message && e.message.includes('billing')) {
-            throw new Error("This feature requires a Google Cloud Platform account with billing enabled. Please check your account settings to use the Veo model.");
-        }
-        throw e; // re-throw other errors
+      const resp = await ai.generate({
+        model: googleAI.model('gemini-3-pro-preview'),
+        prompt: generationPrompt,
+        config: {
+          durationSeconds: parseInt(config.length, 10),
+          aspectRatio: '16:9',
+        },
+      });
+
+      const media = Array.isArray((resp as any).media) ? (resp as any).media : [(resp as any).media];
+      const videoUrl = media?.[0]?.url;
+
+      if (!videoUrl) {
+        throw new Error('No video was generated by the model.');
+      }
+
+      const videoDataUri = await imageUrlToDataUri(videoUrl);
+      return { videoUrl: videoDataUri };
+      
+    } catch (error: any) {
+      if (error.message?.includes('billing')) {
+        throw new Error('Video generation requires a Google Cloud Platform account with billing enabled.');
+      }
+      throw new Error(`Failed to generate trailer: ${error.message}`);
     }
-
-
-    if (!operation) {
-      throw new Error('Expected the model to return an operation');
-    }
-
-    // This is a simplified polling mechanism for demonstration.
-    while (!operation.done) {
-      console.log('Checking operation status...');
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
-      operation = await ai.checkOperation(operation);
-    }
-    
-    if (operation.error) {
-      console.error('Video generation failed:', operation.error);
-      throw new Error(`Failed to generate video: ${operation.error.message}`);
-    }
-
-    const videoPart = operation.output?.message?.content.find(p => !!p.media && p.media.contentType === 'video/mp4');
-
-    if (!videoPart || !videoPart.media?.url) {
-      throw new Error('Failed to find the generated video in the operation result.');
-    }
-    
-    // The media URL from Veo might expire, so we convert it to a data URI to make it persistent.
-    const fetchedVideoDataUri = await imageUrlToDataUri(videoPart.media.url);
-
-    return { videoUrl: fetchedVideoDataUri };
   }
 );
