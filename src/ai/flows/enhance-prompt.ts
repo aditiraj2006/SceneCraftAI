@@ -18,35 +18,22 @@ export async function enhancePrompt(input: EnhancePromptInput): Promise<EnhanceP
   return enhancePromptFlow(input);
 }
 
+const enhancePromptPrompt = ai.definePrompt({
+  name: 'enhancePromptPrompt',
+  model: googleAI.model('gemini-2.5-flash'),
+  input: {schema: EnhancePromptInputSchema},
+  output: {schema: EnhancePromptOutputSchema},
+  prompt: `You are a cinematic expert. Take the following basic scene description and enhance it with detailed cinematic descriptors, including lighting, camera angles, and mood, to create a more vivid and consistent image for storyboard generation.\n\nBasic Scene Description: {{{basicDescription}}}\n\nEnhanced Description:`,
+});
+
 const enhancePromptFlow = ai.defineFlow(
   {
     name: 'enhancePromptFlow',
     inputSchema: EnhancePromptInputSchema,
     outputSchema: EnhancePromptOutputSchema,
   },
-  async (input) => {
-    try {
-      const resp = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash'),
-        prompt: `You are a cinematic expert. Take the following basic scene description and enhance it with detailed cinematic descriptors, including lighting, camera angles, and mood, to create a more vivid and consistent image for storyboard generation.
-
-Basic Scene Description: ${input.basicDescription}
-
-Enhanced Description:`,
-      });
-
-      const text = (resp as any).text;
-      if (!text) {
-        throw new Error('No enhanced description generated');
-      }
-
-      return { enhancedDescription: text };
-      
-    } catch (error: any) {
-      if (error.message?.includes('429') || error.message?.includes('quota')) {
-        throw new Error('AI quota exceeded. Please try again later or check billing.');
-      }
-      throw new Error(`Failed to enhance prompt: ${error.message}`);
-    }
+  async input => {
+    const {output} = await enhancePromptPrompt(input);
+    return output!;
   }
 );

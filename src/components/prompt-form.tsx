@@ -153,7 +153,7 @@ export function PromptForm({ scene, allScenes, referenceSceneId, onSetReferenceS
       }
       startVoiceoverGenerationTransition(async () => {
         try {
-            const result = await generateVoiceover({ text: narration, voice: selectedVoice, languageCode: selectedLanguage });
+            const result = await generateVoiceover({ text: narration, voice: selectedVoice, languageCode: selectedLanguage, autoTranslate: true });
             onSceneUpdate(scene.id, { voiceoverUrl: result.audioUrl });
             toast({
                 title: 'Voiceover Generated',

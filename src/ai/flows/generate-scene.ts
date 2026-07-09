@@ -54,48 +54,34 @@ const generateSceneFlow = ai.defineFlow(
         generationPrompt.push('\nEnsure the characters and style are consistent with the provided reference image.');
     }
     
-    const placeholderSvgDataUri = (text = 'No Image') =>
+    const placeholderSvgDataUri = (text = 'Image generation temporarily unavailable due to API quota.') =>
       `data:image/svg+xml;utf8,${encodeURIComponent(`
         <svg xmlns='http://www.w3.org/2000/svg' width='1024' height='576' viewBox='0 0 1024 576'>
           <rect width='100%' height='100%' fill='#111827' />
-          <text x='50%' y='50%' fill='#9CA3AF' font-family='Arial, Helvetica, sans-serif' font-size='28' text-anchor='middle' dy='.3em'>${text}</text>
+          <text x='50%' y='50%' fill='#ef4444' font-family='Arial, Helvetica, sans-serif' font-size='24' text-anchor='middle' dy='.3em'>${text}</text>
         </svg>
       `)}`;
-
+      
     try {
-      const resp = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash-image'),
-        prompt: generationPrompt as any,
+      const { media } = await ai.generate({
+        model: 'googleai/gemini-2.5-flash-image', // The valid image string verified from current API tables
+        prompt: generationPrompt as any,         // Removed .join('') to properly pass Part[] reference image multimodal array
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
         },
       });
-
-      const media = (resp as any).media ?? (resp as any).output?.media;
-      let imageUrl: string | undefined;
-      if (Array.isArray(media)) {
-        imageUrl = media[0]?.url;
-      } else if (media && typeof media === 'object') {
-        imageUrl = media.url;
+      
+      if (!media?.url) {
+        throw new Error('Image generation returned no media URL');
       }
 
-      if (!imageUrl) {
-        console.error('Image generation returned no media URL', { resp });
-        return { imageUrl: placeholderSvgDataUri('No Image Returned') };
-      }
-
-      return { imageUrl };
+      return { imageUrl: media.url };
     } catch (e: any) {
-      console.error('Image generation failed:', e);
-
+      console.error('Image generation failed during API call:', e);
       const msg = (e && (e.message || e.toString())) || '';
-      if (msg.includes('quota') || msg.includes('Quota') || msg.includes('429') || msg.includes('billing')) {
-        return { imageUrl: placeholderSvgDataUri('Quota Exceeded') };
+      if (msg.includes('quota') || msg.includes('429') || msg.includes('limit: 0')) {
+        return { imageUrl: placeholderSvgDataUri() };
       }
-      if (msg.includes('401') || msg.includes('403') || msg.includes('Not Found')) {
-        return { imageUrl: placeholderSvgDataUri('Auth/Model Error') };
-      }
-
       throw e;
     }
   }
