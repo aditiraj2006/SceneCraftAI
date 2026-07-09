@@ -79,39 +79,45 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
   const handleGenerateImage = async (sceneIndex: number) => {
     setGeneratingIndex(sceneIndex);
     
+    let enhancedPrompt = '';
     try {
-      const scene = scenes[sceneIndex];
+      // It is important NOT to capture 'scenes' here before await, because if we do, 
+      // when we overwrite later, we revert any UI changes done by the user during the fetch wait.
+      const currentScene = scenes[sceneIndex];
+      enhancedPrompt = currentScene.aiPromptUsed || currentScene.description;
       
-      let enhancedPrompt = scene.aiPromptUsed || scene.description;
-      
-      if (!scene.aiPromptUsed) {
+      if (!currentScene.aiPromptUsed) {
         const enhanced = await enhancePrompt({ 
-          basicDescription: scene.description 
+          basicDescription: currentScene.description 
         });
         enhancedPrompt = enhanced.enhancedDescription;
       }
       const result = await generateScene({ 
         prompt: enhancedPrompt 
       });
-      const updatedScenes = [...scenes];
-      updatedScenes[sceneIndex] = {
-        ...updatedScenes[sceneIndex],
-        imageUrl: result.imageUrl,
-        aiPromptUsed: enhancedPrompt,
-        status: 'complete',
-        error: ''
-      };
-            
-      setScenes(updatedScenes);
+      
+      setScenes(prevScenes => {
+        const updated = [...prevScenes];
+        updated[sceneIndex] = {
+          ...updated[sceneIndex],
+          imageUrl: result.imageUrl,
+          aiPromptUsed: enhancedPrompt,
+          status: 'complete',
+          error: ''
+        };
+        return updated;
+      });
           
     } catch (error: any) {
-      const updatedScenes = [...scenes];
-      updatedScenes[sceneIndex] = {
-        ...updatedScenes[sceneIndex],
-        status: 'error',
-        error: error.message
-      };
-      setScenes(updatedScenes);
+      setScenes(prevScenes => {
+        const updated = [...prevScenes];
+        updated[sceneIndex] = {
+          ...updated[sceneIndex],
+          status: 'error',
+          error: error.message
+        };
+        return updated;
+      });
       alert(`Failed to generate image: ${error.message}`);
     } finally {
       setGeneratingIndex(null);
@@ -122,18 +128,19 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
     setEnhancingIndex(sceneIndex);
     
     try {
-      const scene = scenes[sceneIndex];
+      const currentScene = scenes[sceneIndex];
       const enhanced = await enhancePrompt({ 
-        basicDescription: scene.description 
+        basicDescription: currentScene.description 
       });
             
-      const updatedScenes = [...scenes];
-      updatedScenes[sceneIndex] = {
-        ...updatedScenes[sceneIndex],
-        aiPromptUsed: enhanced.enhancedDescription
-      };
-            
-      setScenes(updatedScenes);
+      setScenes(prevScenes => {
+        const updated = [...prevScenes];
+        updated[sceneIndex] = {
+          ...updated[sceneIndex],
+          aiPromptUsed: enhanced.enhancedDescription
+        };
+        return updated;
+      });
           
     } catch (error: any) {
       alert(`Failed to enhance prompt: ${error.message}`);
@@ -185,6 +192,11 @@ export function EditorPage({ initialScenes, story, onScenesUpdate, onBack }: Edi
                     onDelete={deleteScene}
                     activeSceneId={activeSceneId}
                     onSetActiveScene={setActiveSceneId}
+                    onGenerateImage={handleGenerateImage}
+                    onEnhancePrompt={handleEnhancePrompt}
+                    onUpdateScene={updateScene}
+                    generatingIndex={generatingIndex}
+                    enhancingIndex={enhancingIndex}
                 />
             </section>
         </div>

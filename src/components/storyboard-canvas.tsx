@@ -12,9 +12,25 @@ type StoryboardCanvasProps = {
   onDelete: (id: string) => void;
   activeSceneId: string | null;
   onSetActiveScene: (id: string) => void;
+  onGenerateImage: (index: number) => Promise<void>;
+  onEnhancePrompt: (index: number) => Promise<void>;
+  onUpdateScene: (id: string, updates: Partial<Scene>) => void;
+  generatingIndex: number | null;
+  enhancingIndex: number | null;
 };
 
-export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActiveScene, onDelete }: StoryboardCanvasProps) {
+export function StoryboardCanvas({ 
+  scenes, 
+  onReorder, 
+  activeSceneId, 
+  onSetActiveScene, 
+  onDelete,
+  onGenerateImage,
+  onEnhancePrompt,
+  onUpdateScene,
+  generatingIndex,
+  enhancingIndex
+}: StoryboardCanvasProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const scenesRef = useRef(scenes);
@@ -77,6 +93,11 @@ export function StoryboardCanvas({ scenes, onReorder, activeSceneId, onSetActive
             onDragEnd={handleDragEnd}
             isDragging={draggedIndex === index}
             isActive={activeSceneId === scene.id}
+            onGenerateImage={() => onGenerateImage(index)}
+            onEnhancePrompt={() => onEnhancePrompt(index)}
+            onUpdateScene={(updates) => onUpdateScene(scene.id, updates)}
+            isGenerating={generatingIndex === index}
+            isEnhancing={enhancingIndex === index}
           />
         </React.Suspense>
         </div>
